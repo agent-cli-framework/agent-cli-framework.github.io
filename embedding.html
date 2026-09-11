@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embedding the aclif runtime</title>
+<meta name="description" content="Run aclif commands in-process from a tool handler or a gateway, supplying credentials, identity, and policy per invocation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./"><img src="img/aclif-logo.svg" alt="aclif" width="96" height="44"></a>
+    <nav>
+      <a href="./">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <a href="build-a-cli.html">Build a CLI</a>
+      <a href="embedding.html" aria-current="page">Embedding</a>
+      <a href="providers.html">Providers</a>
+      <a href="https://github.com/agent-cli-framework/aclif">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<h1>Embedding</h1>
+<p class="lede">The CLI is also a library. A host process runs the same command classes in-process, supplying credentials, identity, and policy per invocation, with no process spawned and connections kept warm between calls.</p>
+
+<h2>Why the runtime exists</h2>
+
+<p>oclif is designed for one person running one command: one process, arguments from the shell, output to the terminal, exit when done. An agent runs the same commands thousands of times, often inside a process serving many agents at once, with identity and credentials arriving per request. A process per command means a login per command. aclif therefore treats the CLI as a library with a binary attached. Every execution is described by an explicit invocation, and the same command classes run under any host.</p>
+
+<h2>Three deployments</h2>
+
+<h3>1. In the agent's environment</h3>
+<p>The binary sits on the agent's PATH and the agent shells out to it. Credentials come from flags, environment, or a profile; policy from the same file; the audit line on stderr. Use this when one agent, one operator, and one set of credentials share a trust boundary.</p>
+
+<h3>2. As a tool call</h3>
+<p>A host binds commands as functions the model can call. In-process, the host starts one <code>Runtime</code> and calls <code>runtime.run(...)</code> from its tool handler. Through an agent application, the model is given a single tool whose arguments are a command string, its flags, and a tenant instance, and the application forwards it. Use this when tool definitions must stay out of the model's context: one tool describing the grammar replaces one tool per operation.</p>
+
+<h3>3. As a gateway</h3>
+<p>A long-lived process starts one <code>Runtime</code> and serves many agents. Each request becomes an <code>Invocation</code> carrying the command as argv, an execution context with the user's identity and forwarded SSO claims, a credential resolver over the host's secrets store, a capability gate that runs on the command's declared metadata before its code loads, a rate-limit hook, a reporter, and the shared connection pool keyed by provider, instance, identity, and auth type. The agents hold no provider credentials and cannot widen their own scope. Use this when many agents share providers and one place must hold the policy and the audit trail.</p>
+
+<h2>Minimal host</h2>
+
+<pre><code>import {Runtime, EventReporter, StaticCredentialResolver} from 'aclif'
+
+const runtime = await Runtime.start({cliRoot: '/path/to/your/cli'})
+const reporter = new EventReporter()
+const result = await runtime.run({
+  argv: ['salesforce', 'data', 'query', '--query', 'SELECT Id FROM Account LIMIT 1'],
+  context: {requestId: 'req-1', user: {id: 'u1', username: 'alice'}},
+  credentials: new StaticCredentialResolver(new Map([
+    ['salesforce', {instanceUrl, accessToken, authType: 'session'}],
+  ])),
+  pool: runtime.pool,
+  reporter,
+  hooks: {
+    capabilityGate: async ({aciMetadata}, ctx) =>
+      aciMetadata.mutability === 'delete' &amp;&amp; !ctx.user
+        ? {allowed: false, error: {code: 'DENIED', message: 'Deletes need a user'}}
+        : {allowed: true},
+  },
+})
+console.log(result.exitCode, reporter.envelope())</code></pre>
+
+<p><code>cliRoot</code> is the package root of the CLI whose commands the runtime should load: the framework itself for the reference binary, or your own package for a <a href="build-a-cli.html">CLI built on aclif</a>.</p>
+
+<h2>What the host supplies</h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>On the invocation</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><code>context</code></td><td>request id, the acting user, forwarded SSO claims, an abort signal, audit metadata such as the calling application</td></tr>
+<tr><td><code>credentials</code></td><td>a <code>CredentialResolver</code>. <code>Static</code>, <code>Env</code>, <code>Profile</code>, and <code>Chain</code> resolvers are built in; a vault-backed host implements the one-method interface and resolves per request</td></tr>
+<tr><td><code>pool</code></td><td>the runtime's connection pool; two tenants never share a connection</td></tr>
+<tr><td><code>reporter</code></td><td>collects the envelope and events; <code>EventReporter</code> is the reference implementation</td></tr>
+<tr><td><code>hooks.capabilityGate</code></td><td>allow or refuse from the command's declared metadata before its code loads</td></tr>
+<tr><td><code>hooks.rateLimit</code></td><td>called per provider and operation before execution</td></tr>
+<tr><td><code>tenantCache</code>, <code>aliasStore</code></td><td>optional: the host's own store for tenant catalogues and alias sets, so <code>learn</code>, <code>--schema</code>, and <code>--canonical</code> read the host's data</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Health monitoring, probe timers, and declarative manifests that turn one HTTP endpoint into a command are part of the runtime as well. The reference is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/EMBEDDING.md">EMBEDDING.md</a>.</p>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    aclif is MIT licensed. Source, issues, and documentation at <a href="https://github.com/agent-cli-framework/aclif">github.com/agent-cli-framework/aclif</a>.
+  </div>
+</footer>
+</body>
+</html>

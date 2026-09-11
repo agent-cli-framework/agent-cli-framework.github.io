@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting started with aclif</title>
+<meta name="description" content="Install the aclif reference binary, configure credentials, and run the introspection-first workflow.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./"><img src="img/aclif-logo.svg" alt="aclif" width="96" height="44"></a>
+    <nav>
+      <a href="./">Overview</a>
+      <a href="getting-started.html" aria-current="page">Getting started</a>
+      <a href="build-a-cli.html">Build a CLI</a>
+      <a href="embedding.html">Embedding</a>
+      <a href="providers.html">Providers</a>
+      <a href="https://github.com/agent-cli-framework/aclif">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<h1>Getting started</h1>
+<p class="lede">The reference CLI is the <code>aclif</code> binary, built with every native and contributed provider. Node 22 or later.</p>
+
+<h2>Install</h2>
+
+<pre><code>npm install -g aclif
+aclif discover --json</code></pre>
+
+<p>Or from a checkout:</p>
+
+<pre><code>git clone https://github.com/agent-cli-framework/aclif.git
+cd aclif &amp;&amp; npm install &amp;&amp; npm run build
+node bin/run.js discover --json</code></pre>
+
+<p><code>discover</code> lists every provider, its tier, and whether credentials are configured. It needs no credentials itself.</p>
+
+<h2>Credentials</h2>
+
+<p>Credentials resolve in one order: command flags, then environment variables, then a named profile in the config file. Each provider declares its authentication paths once, and the flags, environment names, profile format, and error messages all follow from that declaration.</p>
+
+<pre><code>export SF_INSTANCE_URL=https://example.my.salesforce.com
+export SF_ACCESS_TOKEN=...
+aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 3" --json</code></pre>
+
+<p>For anything longer than a session, put a profile in <code>~/.config/aclif/config.yaml</code>. Secrets in a profile can be literal, or read from the environment, a file, or a command at credential time, so the file itself need hold no secret.</p>
+
+<pre><code>default_profile: dev
+profiles:
+  dev:
+    salesforce:
+      instance_url: https://example.my.salesforce.com
+      access_token: {env: SF_ACCESS_TOKEN}</code></pre>
+
+<p>Select one with <code>--profile dev</code> or <code>ACLIF_PROFILE=dev</code>. <code>aclif auth status</code> shows which profile and credentials are in effect without printing a secret. The full reference is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONFIGURATION.md">CONFIGURATION.md</a>.</p>
+
+<h2>Learn a provider, then a command</h2>
+
+<pre><code>aclif learn salesforce --json                  # topics, key fields, query syntax, auth paths
+aclif salesforce data query --schema           # flags, args, safety metadata
+aclif salesforce data query --examples         # runnable examples with the responses they produce
+aclif salesforce data query --shape            # the structure of a successful result
+aclif salesforce data query --estimate         # rough token cost per record</code></pre>
+
+<p>Every introspection flag returns before the command executes and works with an empty environment. This is the property that lets an agent load a command's definition only at the moment it needs it.</p>
+
+<h2>Run, safely</h2>
+
+<pre><code>aclif salesforce data query --query "SELECT Id FROM Account LIMIT 1" --dry-run
+aclif salesforce data dml --operation delete --object Account --ids 001xx --confirm</code></pre>
+
+<p>Every mutation accepts <code>--dry-run</code>. Commands whose declared metadata marks them as deletes, as touching all records, or as executing code on the target require <code>--confirm</code>, and the policy layer enforces that before the command's code loads. After every run an audit line lands on stderr naming the command, the user, and the exit code.</p>
+
+<h2>Read the result</h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Field</th><th>Holds</th></tr></thead>
+<tbody>
+<tr><td><code>success</code></td><td><code>true</code> or <code>false</code></td></tr>
+<tr><td><code>result</code></td><td>the records or the provider's response</td></tr>
+<tr><td><code>_context.pagination</code></td><td>returned, total, <code>hasMore</code>, and <code>nextCommand</code>, a complete command string for the next page</td></tr>
+<tr><td><code>_context.relatedCommands</code></td><td>complete command strings worth running next</td></tr>
+<tr><td><code>error</code></td><td>on failure: <code>code</code>, <code>message</code>, a <code>hint</code> naming the command that fixes it, and where possible a corrected value</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Exit codes are 0 for success, 1 for an API failure, 2 for a usage error, and 3 for missing or rejected credentials, so an agent can branch without parsing prose. The full contract, with the JSON Schemas that validate every envelope, is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONTRACT.md">CONTRACT.md</a>. The agent-facing quick start is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/AGENTS.md">AGENTS.md</a>.</p>
+
+<h2>Give an agent the binary</h2>
+
+<p>Put <code>aclif</code> on the agent's PATH the way a coding agent has <code>git</code>. Point the agent at <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/AGENTS.md">AGENTS.md</a>, or tell it to start with <code>aclif discover --json</code> and use <code>--schema</code> and <code>--examples</code> before running anything. The repository <a href="https://github.com/agent-cli-framework/aclif/blob/main/Dockerfile">Dockerfile</a> builds a standalone image for this deployment.</p>
+
+<p>Next: <a href="build-a-cli.html">build a CLI with your own name and providers</a>, or <a href="embedding.html">embed the runtime in a host process</a>.</p>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    aclif is MIT licensed. Source, issues, and documentation at <a href="https://github.com/agent-cli-framework/aclif">github.com/agent-cli-framework/aclif</a>.
+  </div>
+</footer>
+</body>
+</html>

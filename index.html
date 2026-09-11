@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aclif, the Agent CLI Framework</title>
+<meta name="description" content="aclif is a framework for building command-line tools that AI agents use to reach SaaS platforms: one grammar, self-describing commands, declared safety metadata, and an embeddable runtime.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./"><img src="img/aclif-logo.svg" alt="aclif" width="96" height="44"></a>
+    <nav>
+      <a href="./" aria-current="page">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <a href="build-a-cli.html">Build a CLI</a>
+      <a href="embedding.html">Embedding</a>
+      <a href="providers.html">Providers</a>
+      <a href="https://github.com/agent-cli-framework/aclif">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<h1>A command-line framework for AI agents</h1>
+<p class="lede">aclif builds CLIs that agents can learn on demand, that declare what each command will do before it runs, and that run the same way from a shell, inside a tool call, or behind a gateway serving many agents at once.</p>
+
+<p><a href="https://oclif.io">oclif</a> is the framework behind the Salesforce, Shopify, Adobe, and Twilio CLIs. It solved the hard parts of building a command-line tool for people: parsing flags, routing commands, generating help, loading plugins. aclif uses it as an ordinary, unforked dependency and adds what a tool needs when the one typing is an AI agent.</p>
+
+<h2>Why a CLI</h2>
+
+<p>Two published arguments decided the design. Justin Poehnelt's <a href="https://justin.poehnelt.com/posts/mcp-abstraction-tax/">The MCP Abstraction Tax</a> observes that every layer between an agent and an API loses fidelity, and that a tool server must either reduce the API to a few operations or load every definition into context on every turn. A command-line tool whose documentation loads on demand avoids both costs. Prompt One's <a href="https://www.promptone.ai/blog/agent-should-never-choose-its-own-tools/">Your Agent Should Never Choose Its Own Tools</a> argues that a workflow agent's commands should be chosen, validated, and fixed at design time under a person's identity, and that an agent holding live credentials while reading untrusted content is where prompt injection does its damage. Both arguments, restated with their sources, are in the repository's <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/MOTIVATION.md">MOTIVATION.md</a>.</p>
+
+<h2>What an agent gets</h2>
+
+<div class="cards">
+  <div class="card">
+    <h3>One grammar</h3>
+    <p>One command structure, one JSON envelope, and one error vocabulary across every provider. An agent learns the tool once.</p>
+  </div>
+  <div class="card">
+    <h3>Introspection without execution</h3>
+    <p><code>--schema</code>, <code>--examples</code>, <code>--shape</code>, and five more flags answer without credentials and without running anything.</p>
+  </div>
+  <div class="card">
+    <h3>Declared safety</h3>
+    <p>Every command states whether it reads, writes, or deletes, how many records it touches, and whether it can be undone. A policy gate can refuse it before its code loads.</p>
+  </div>
+  <div class="card">
+    <h3>Actionable errors</h3>
+    <p>Every error carries a code, a hint naming the command that fixes it, and where possible a corrected value ready to resend.</p>
+  </div>
+  <div class="card">
+    <h3>Canonical names</h3>
+    <p>Alias sets map your names for entities and fields onto each platform's native names, so <code>customer</code> resolves to Account in one org and Company in another.</p>
+  </div>
+  <div class="card">
+    <h3>An embeddable runtime</h3>
+    <p>The same command classes run in-process inside a host that supplies credentials, identity, and policy per request and keeps connections warm.</p>
+  </div>
+</div>
+
+<h2>The introspection-first workflow</h2>
+
+<p>An agent needs no documentation beyond the binary.</p>
+
+<pre><code>aclif discover --json                          # every provider, its tier, whether credentials are configured
+aclif learn salesforce --json                  # a briefing: topics, key fields, query syntax, auth paths
+aclif salesforce data query --schema           # flags, args, safety metadata, no execution
+aclif salesforce data query --examples         # runnable examples with the responses they produce
+aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 5" --dry-run
+aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 5" --json</code></pre>
+
+<p>Every result is one envelope. The <code>_context</code> block carries pagination with the exact next command, the fields available, and related commands worth running.</p>
+
+<pre><code>{
+  "success": true,
+  "result": {"records": [{"Id": "001xx", "Name": "Acme"}], "totalSize": 1, "done": true},
+  "_context": {
+    "contract": "1.0.0",
+    "pagination": {"returned": 1, "total": 1, "hasMore": false, "nextCommand": null},
+    "relatedCommands": ["aclif salesforce discover --object Account --verbose"]
+  }
+}</code></pre>
+
+<h2>Where it runs</h2>
+
+<p>A vendor CLI is built for one deployment: installed on a machine, logged in by the person at the keyboard, one process per command. aclif is one package whose command classes run unchanged in three deployments. The host decides who supplies the credentials, who enforces policy, and who keeps the audit trail.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th></th><th>Binary on PATH</th><th>Tool call, in-process</th><th>Gateway</th></tr></thead>
+<tbody>
+<tr><td>Credentials</td><td>flags, env, <code>config.yaml</code></td><td>host-supplied resolver</td><td>vault-backed resolver, per request</td></tr>
+<tr><td>Policy</td><td><code>config.yaml</code></td><td><code>capabilityGate</code> hook</td><td><code>capabilityGate</code> plus the host's middleware</td></tr>
+<tr><td>Identity</td><td><code>--identity-token</code> or env</td><td><code>context.user</code></td><td><code>context.user</code> and SSO claims from the request</td></tr>
+<tr><td>Audit</td><td>stderr line per run</td><td>reporter events</td><td>reporter events, recorded by the host</td></tr>
+<tr><td>Connections</td><td>file session cache</td><td>runtime pool</td><td>runtime pool, keyed per tenant and identity</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Details for each deployment are on the <a href="embedding.html">Embedding</a> page.</p>
+
+<h2>Start</h2>
+
+<ul>
+  <li><a href="getting-started.html">Getting started</a>: install the reference binary and run the introspection workflow.</li>
+  <li><a href="build-a-cli.html">Build a CLI</a>: scaffold your own binary with your own name and providers.</li>
+  <li><a href="providers.html">Providers</a>: what ships, the three tiers, and how a new provider is written.</li>
+  <li><a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONTRACT.md">The contract</a>: the envelope, errors, exit codes, metadata, and the JSON Schemas behind them.</li>
+</ul>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    aclif is MIT licensed. Source, issues, and documentation at <a href="https://github.com/agent-cli-framework/aclif">github.com/agent-cli-framework/aclif</a>.
+  </div>
+</footer>
+</body>
+</html>

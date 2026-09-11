@@ -1,0 +1,227 @@
+/* Tokens ported from the promptone.ai website theme ("Ocean Vivid"):
+   blue-tinted neutrals for surfaces and borders, royal blue for every
+   action, flat fills, dense radii. Light only, matching the site. */
+:root {
+  --bg100: #f5f8fc;   /* page ground */
+  --bg200: #ffffff;   /* panels, header */
+  --bg300: #eaf0f8;   /* tinted fills, code */
+  --bg400: #c8d8ec;   /* borders, dividers */
+  --fg100: #0f172a;   /* primary text */
+  --fg200: #334155;   /* body text */
+  --fg300: #4a5d80;   /* muted */
+  --fg400: #2d5fad;   /* emphasized text, footer links */
+  --accent100: #2d5fad; /* primary action */
+  --accent200: #1e3a7b; /* links, hover */
+  --accent300: #8cb4d8; /* highlight */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-xl: 0.5rem;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card-hover: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  --max: 768px;
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg100);
+  color: var(--fg100);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+::selection { background: var(--accent100); color: #fff; }
+:focus-visible { outline: 2px solid var(--accent100); outline-offset: 2px; }
+
+/* Header: white panel, blue-slate hairline, bold wordmark, medium nav links
+   with a 2px royal-blue underline on hover and on the current page. */
+header.site {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg200);
+  border-bottom: 1px solid var(--bg400);
+}
+header.site .inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 1rem 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 2rem;
+}
+header.site .brand {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+  text-decoration: none;
+}
+header.site .brand img {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+header.site nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+}
+header.site nav a {
+  position: relative;
+  color: var(--fg200);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 0.25rem 0;
+  transition: color 150ms ease;
+}
+header.site nav a::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -2px;
+  height: 2px;
+  background: var(--accent100);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 150ms ease;
+}
+header.site nav a:hover,
+header.site nav a[aria-current="page"] { color: var(--fg100); }
+header.site nav a:hover::after,
+header.site nav a[aria-current="page"]::after { transform: scaleX(1); }
+
+/* Prose: the site's Article shell */
+main {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+  color: var(--fg200);
+  line-height: 1.75;
+}
+@media (min-width: 1024px) {
+  header.site .inner, main, footer.site .inner { padding-left: 4rem; padding-right: 4rem; }
+  :root { --max: 896px; }
+}
+
+h1, h2, h3 {
+  color: var(--fg100);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+h1 { font-size: 2.5rem; margin: 1.5rem 0 1rem; }
+h2 { font-size: 1.5rem; margin: 3rem 0 1rem; }
+h3 { font-size: 1.25rem; margin: 2rem 0 0.5rem; }
+p { margin: 1rem 0; }
+p.lede {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--fg300);
+  margin: 0 0 1.5rem;
+}
+strong { color: var(--fg100); }
+
+a { color: var(--accent100); text-decoration: none; }
+main a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+ul, ol { margin: 1rem 0; padding-left: 2rem; }
+ul { list-style: disc; }
+ol { list-style: decimal; }
+li { margin: 0.25rem 0; }
+
+/* Code: JetBrains Mono, tinted fill, dense radius */
+code, kbd, samp, pre { font-family: var(--mono); }
+code {
+  font-size: 0.9em;
+  background: var(--bg300);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  color: var(--fg100);
+}
+pre {
+  background: var(--bg300);
+  border: 1px solid var(--bg400);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.875rem;
+  color: var(--fg100);
+}
+
+/* Tables: bordered cells, tinted header row, faint even-row stripe */
+.table-wrap { overflow-x: auto; margin: 2rem 0; }
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 0.875rem;
+}
+th, td {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.5rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: var(--bg300); color: var(--fg100); font-weight: 600; }
+tr:nth-child(even) td { background: rgba(0, 0, 0, 0.02); }
+
+/* Cards: white panels on the blue-white ground, quiet elevation */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+.card {
+  background: var(--bg200);
+  border: 1px solid var(--bg400);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem 1.25rem 1.1rem;
+  transition: box-shadow 150ms ease;
+}
+.card:hover { box-shadow: var(--shadow-card-hover); }
+.card h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+.card p { margin: 0; color: var(--fg300); font-size: 0.95rem; line-height: 1.55; }
+
+.note {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--accent100);
+  color: var(--fg300);
+}
+
+/* Footer: faint top rule, small blue-slate text */
+footer.site {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--bg100);
+  color: var(--fg400);
+  font-size: 0.875rem;
+}
+footer.site .inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 1rem 2rem;
+}
+footer.site a { color: var(--fg400); text-decoration: none; }
+footer.site a:hover { color: var(--accent100); }

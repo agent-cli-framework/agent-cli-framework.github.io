@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aclif providers</title>
+<meta name="description" content="The providers aclif ships, the three provider tiers, and how a new provider is written from a platform's API specification.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./"><img src="img/aclif-logo.svg" alt="aclif" width="96" height="44"></a>
+    <nav>
+      <a href="./">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <a href="build-a-cli.html">Build a CLI</a>
+      <a href="embedding.html">Embedding</a>
+      <a href="providers.html" aria-current="page">Providers</a>
+      <a href="https://github.com/agent-cli-framework/aclif">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<h1>Providers</h1>
+<p class="lede">A provider is one directory that projects a platform's API onto the command surface. Every provider meets the same contract and the same conformance suite, whichever tier it belongs to.</p>
+
+<h2>What ships</h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Provider</th><th>Tier</th><th>Authentication</th><th>Setup</th></tr></thead>
+<tbody>
+<tr><td>Salesforce</td><td>native</td><td>session token; username and password with security token; OAuth client credentials</td><td><a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/providers/native/salesforce/SETUP.md">SETUP</a></td></tr>
+<tr><td>ServiceNow</td><td>native</td><td>OAuth bearer token; HTTP Basic</td><td><a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/providers/native/servicenow/SETUP.md">SETUP</a></td></tr>
+<tr><td>DocuSign</td><td>native</td><td>JWT Grant with an RSA key</td><td><a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/providers/native/docusign/SETUP.md">SETUP</a></td></tr>
+<tr><td>Agentforce</td><td>native</td><td>External Client App client credentials</td><td><a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/providers/native/agentforce/SETUP.md">SETUP</a></td></tr>
+<tr><td>Google Workspace (Gmail, Calendar)</td><td>contributed</td><td>OAuth refresh token; service account with domain-wide delegation; access token</td><td><a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/providers/contributed/google/SETUP.md">SETUP</a></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Three tiers</h2>
+
+<div class="cards">
+  <div class="card">
+    <h3>native</h3>
+    <p>Maintained by the project. Every release runs their full suite, including live smoke tests against real tenants.</p>
+  </div>
+  <div class="card">
+    <h3>contributed</h3>
+    <p>Maintained by the people named in the plugin and in CODEOWNERS. Same contract, same conformance rules; the project reviews only for contract and boundary questions.</p>
+  </div>
+  <div class="card">
+    <h3>private</h3>
+    <p>A fork's own providers, under a prefix upstream never commits to. Pulling upstream never conflicts with them, and upstream CI refuses pull requests that touch the prefix.</p>
+  </div>
+</div>
+
+<p>Tier is a property of the directory a plugin lives in, never something the plugin declares. The provider index is generated at build time by scanning those directories, so adding a provider in any tier is creating a directory. Nothing in <code>package.json</code> or the framework's source changes.</p>
+
+<h2>Writing one</h2>
+
+<p>Start from the platform's API specification. Every serious SaaS API publishes a machine-readable description of itself, and a provider is a mechanical projection of that description onto the command surface: entities become topics, operations become commands, the specification's field types become flags, and its example values become fixtures. That is work a coding agent does well, and the conformance suite decides when the result is done.</p>
+
+<p>A provider directory holds a plugin definition, a credential schema, a client, an error classifier, metadata for <code>learn</code>, and its commands. From the credential schema alone the framework derives the auth flags, the environment variable names, the profile format, the status <code>discover</code> reports, and the exit-3 error when nothing is configured. From each command's declared metadata it derives policy enforcement, <code>--dry-run</code> and <code>--confirm</code> behaviour, and the introspection output.</p>
+
+<pre><code>npm run scaffold-provider -- --tier contributed --name acme --display "Acme Widgets"
+npm run build &amp;&amp; npx vitest run test/conformance</code></pre>
+
+<p>The conformance suite iterates every registered command and checks, among other things: complete and truthful safety metadata, examples that name nothing internal, error hints that name the command fixing the problem, a working <code>--schema</code> and <code>--examples</code> with an empty environment, and no imports between providers or from core into a provider directory. The full guide, with the pull-request checklist, is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/PROVIDER_AUTHORING.md">PROVIDER_AUTHORING.md</a>.</p>
+
+<h2>Tenant catalogues and canonical names</h2>
+
+<p><code>aclif &lt;provider&gt; introspect --bootstrap</code> captures an instance's custom objects, fields, and enumerations into a tenant catalogue, so <code>learn</code> and <code>--schema</code> answer in the customer's own names instead of the vendor's defaults. Alias sets map canonical entity and field names onto each provider and instance's native names, and <code>--canonical</code> resolves through them. A starter vocabulary ships with the framework; <code>aliases import</code> and <code>aliases export</code> move sets between installations. The formats are in <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONTRACT.md">CONTRACT.md</a>.</p>
+
+<h2>Manifests</h2>
+
+<p>A declarative JSON manifest turns one HTTP endpoint, such as an Apex REST class or a ServiceNow scripted API, into a command with the same envelope, metadata, and introspection as a static one, without writing a provider. Manifests are loaded from the config directory standalone, or supplied by the host when embedded.</p>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    aclif is MIT licensed. Source, issues, and documentation at <a href="https://github.com/agent-cli-framework/aclif">github.com/agent-cli-framework/aclif</a>.
+  </div>
+</footer>
+</body>
+</html>

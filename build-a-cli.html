@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build a CLI on aclif</title>
+<meta name="description" content="Scaffold a command-line tool with your own name and your own providers on the aclif framework.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./"><img src="img/aclif-logo.svg" alt="aclif" width="96" height="44"></a>
+    <nav>
+      <a href="./">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <a href="build-a-cli.html" aria-current="page">Build a CLI</a>
+      <a href="embedding.html">Embedding</a>
+      <a href="providers.html">Providers</a>
+      <a href="https://github.com/agent-cli-framework/aclif">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<h1>Build your own CLI</h1>
+<p class="lede">aclif is a framework. The binary you ship is yours: it names itself, picks its providers, and gets everything else from the framework.</p>
+
+<h2>Scaffold</h2>
+
+<pre><code>npx --package aclif aclif-scaffold-cli --name mycli --dir ../mycli --providers salesforce,servicenow
+cd ../mycli &amp;&amp; npm install &amp;&amp; npm run build
+./bin/run.js discover --json</code></pre>
+
+<p>Here <code>mycli</code> stands for whatever you name yours. The scaffold writes a small package: a <code>package.json</code> with the oclif configuration, a <code>bin/run.js</code>, three hook re-exports, a topic generator, and one source file.</p>
+
+<pre><code>// src/index.ts
+import {defineCli, type DefinedCli} from 'aclif'
+import {salesforcePlugin, servicenowPlugin} from 'aclif/providers'
+
+const cli: DefinedCli = defineCli({
+  bin: 'mycli',
+  providers: [salesforcePlugin, servicenowPlugin],
+})
+export const COMMANDS: DefinedCli['COMMANDS'] = cli.COMMANDS
+export const registry: DefinedCli['registry'] = cli.registry</code></pre>
+
+<h2>What the name changes</h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Surface</th><th><code>mycli</code> gets</th></tr></thead>
+<tbody>
+<tr><td>Command strings in examples, hints, and next-command suggestions</td><td><code>mycli salesforce data query ...</code>, rendered at emit time from the configured binary name</td></tr>
+<tr><td>Config and cache directories</td><td><code>~/.config/mycli/config.yaml</code>, <code>~/.cache/mycli/</code></td></tr>
+<tr><td>Framework environment variables</td><td><code>MYCLI_PROFILE</code>, <code>MYCLI_INSTANCE</code>, <code>MYCLI_IDENTITY_TOKEN</code>, <code>MYCLI_IDENTITY_SECRET</code>, <code>MYCLI_NO_MANIFESTS</code>, <code>MYCLI_CONFIG_DIR</code></td></tr>
+<tr><td>Audit line, <code>auth status</code>, <code>discover</code>, <code>learn</code></td><td>this CLI's providers only</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Everything else is the framework's: the envelope, the error vocabulary, the introspection flags, credential resolution, the connection pool, the session cache, and the embedded runtime.</p>
+
+<h2>Add your own provider</h2>
+
+<p>A provider that belongs to your CLI goes under your package's <code>src/providers/</code> and is listed in <code>src/index.ts</code> next to the framework's. It is written exactly as a framework provider is, against the same plugin API and the same conformance rules, and it is tier <code>private</code> in your CLI. The guide is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/PROVIDER_AUTHORING.md">PROVIDER_AUTHORING.md</a>; the scaffold is <code>npm run scaffold-provider</code>.</p>
+
+<pre><code>import {defineCli, type DefinedCli} from 'aclif'
+import {salesforcePlugin} from 'aclif/providers'
+import {acmePlugin} from './providers/acme/plugin.js'
+
+const cli: DefinedCli = defineCli({bin: 'mycli', providers: [salesforcePlugin, acmePlugin]})</code></pre>
+
+<h2>Upgrade the framework</h2>
+
+<p><code>npm update aclif</code>. Your providers and your name are in your tree; the framework's changes arrive as a dependency bump. Nothing in the framework repository needs to know your CLI exists.</p>
+
+<h2>When to fork instead</h2>
+
+<p>Build a CLI package unless you also need to change the framework's core. A team that does change core forks the repository and keeps its providers under <code>src/providers/private/</code>, a prefix upstream never commits to and upstream CI refuses in pull requests, so pulling upstream stays conflict-free and core fixes go back from a clean branch. The two routes, and how to contribute a provider or a fix back, are in <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/FORKING.md">FORKING.md</a>.</p>
+
+<p>Details: <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/BUILDING_A_CLI.md">BUILDING_A_CLI.md</a>.</p>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    aclif is MIT licensed. Source, issues, and documentation at <a href="https://github.com/agent-cli-framework/aclif">github.com/agent-cli-framework/aclif</a>.
+  </div>
+</footer>
+</body>
+</html>
