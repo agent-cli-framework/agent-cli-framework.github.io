@@ -3,8 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q2RD0MYB1S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Q2RD0MYB1S');
+</script>
 <title>aclif, the Agent CLI Framework</title>
-<meta name="description" content="aclif is a framework for building command-line tools that AI agents use to reach SaaS platforms: one grammar, self-describing commands, declared safety metadata, and an embeddable runtime.">
+<meta name="description" content="aclif is a framework for building command-line tools that AI agents use to reach SaaS platforms: one grammar, self-describing commands, declared safety metadata, and a runtime that runs the same commands from a shell, in a tool call, or behind a gateway.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -20,53 +29,110 @@
       <a href="build-a-cli.html">Build a CLI</a>
       <a href="embedding.html">Embedding</a>
       <a href="providers.html">Providers</a>
-      <a href="https://github.com/agent-cli-framework/aclif">GitHub</a>
+      <a href="faq.html">FAQ</a>
+      <a class="gh" href="https://github.com/agent-cli-framework/aclif" aria-label="aclif on GitHub" title="GitHub"><svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
     </nav>
   </div>
 </header>
 
 <main>
-<h1>A command-line framework for AI agents</h1>
-<p class="lede">aclif builds CLIs that agents can learn on demand, that declare what each command will do before it runs, and that run the same way from a shell, inside a tool call, or behind a gateway serving many agents at once.</p>
+<h1>The Agent CLI Framework</h1>
+<p class="lede">aclif builds command-line tools for AI
+agents. An agent gets a single tool that provides a unified
+abstraction across every SaaS provider: one grammar, and
+canonical names that reach the same record by the same name
+on any platform.</p>
 
-<p><a href="https://oclif.io">oclif</a> is the framework behind the Salesforce, Shopify, Adobe, and Twilio CLIs. It solved the hard parts of building a command-line tool for people: parsing flags, routing commands, generating help, loading plugins. aclif uses it as an ordinary, unforked dependency and adds what a tool needs when the one typing is an AI agent.</p>
+<h2>Why agents need their own CLI</h2>
 
-<h2>Why a CLI</h2>
+<p>An MCP server publishes a fixed list of tools, and every
+tool on the list occupies the agent's context on every turn.
+The server's author trades coverage for cost when the server
+is built, and an agent that spans several platforms needs a
+server, a login, and a grammar for each platform.</p>
 
-<p>Two published arguments decided the design. Justin Poehnelt's <a href="https://justin.poehnelt.com/posts/mcp-abstraction-tax/">The MCP Abstraction Tax</a> observes that every layer between an agent and an API loses fidelity, and that a tool server must either reduce the API to a few operations or load every definition into context on every turn. A command-line tool whose documentation loads on demand avoids both costs. Prompt One's <a href="https://www.promptone.ai/blog/agent-should-never-choose-its-own-tools/">Your Agent Should Never Choose Its Own Tools</a> argues that a workflow agent's commands should be chosen, validated, and fixed at design time under a person's identity, and that an agent holding live credentials while reading untrusted content is where prompt injection does its damage. Both arguments, restated with their sources, are in the repository's <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/MOTIVATION.md">MOTIVATION.md</a>.</p>
+<p>aclif loads a command's definition only when the agent
+asks for it, so the whole API of every provider is reachable
+at no standing cost in context. One grammar, one envelope,
+and one error vocabulary cover every provider, so the
+agent's context stays about the same size whether it reaches
+one platform or five.</p>
 
-<h2>What an agent gets</h2>
+<p>An agent that runs a defined workflow can leave the model
+out of the call altogether. A person or an authoring tool
+works out the exact command at design time and embeds it in
+the workflow as a string. At run time the agent executes
+that string as ordinary code, with no tool definition loaded
+and no inference. The command is chosen at design time, and
+the authority to run it, the credential, the acting
+identity, and the policy, is supplied at run time by
+whatever runs it. Neither side ever holds both.</p>
+
+<h2>What every command gives you</h2>
 
 <div class="cards">
   <div class="card">
     <h3>One grammar</h3>
-    <p>One command structure, one JSON envelope, and one error vocabulary across every provider. An agent learns the tool once.</p>
-  </div>
-  <div class="card">
-    <h3>Introspection without execution</h3>
-    <p><code>--schema</code>, <code>--examples</code>, <code>--shape</code>, and five more flags answer without credentials and without running anything.</p>
-  </div>
-  <div class="card">
-    <h3>Declared safety</h3>
-    <p>Every command states whether it reads, writes, or deletes, how many records it touches, and whether it can be undone. A policy gate can refuse it before its code loads.</p>
-  </div>
-  <div class="card">
-    <h3>Actionable errors</h3>
-    <p>Every error carries a code, a hint naming the command that fixes it, and where possible a corrected value ready to resend.</p>
+    <p>One command structure, one JSON envelope, and one
+    error vocabulary across every provider. An agent learns
+    the tool once, and a new platform adds commands without
+    adding grammar. A JSON manifest adds a command over one
+    HTTP endpoint in the same grammar, with no code.</p>
   </div>
   <div class="card">
     <h3>Canonical names</h3>
-    <p>Alias sets map your names for entities and fields onto each platform's native names, so <code>customer</code> resolves to Account in one org and Company in another.</p>
+    <p>Alias sets map <code>customer</code> to
+    <code>Account</code> in one Salesforce instance and
+    <code>core_company</code> in ServiceNow. A tenant
+    catalog, captured from each instance at deploy time,
+    teaches the CLI each instance's custom objects and
+    fields with no change to the provider.</p>
+  </div>
+  <div class="card">
+    <h3>Errors an agent can act on</h3>
+    <p>An agent recovers in one turn. Every error names the
+    failure, the command that fixes it, and, where the
+    provider's classifier has a rewrite rule for the
+    mistake, the corrected input ready to resend. The
+    classifier is plain code with no model behind it. A
+    command validated in a shell at design time returns the
+    same error at run time under any host, because the same
+    command classes run in both.</p>
+  </div>
+  <div class="card">
+    <h3>Introspection without execution</h3>
+    <p><code>--schema</code>, <code>--examples</code>,
+    <code>--shape</code>, and four more flags return before
+    the command runs, need no credentials, and count against
+    no API quota. An agent can discover, learn, introspect,
+    and preview against a rate-limited instance and spend
+    nothing.</p>
   </div>
   <div class="card">
     <h3>An embeddable runtime</h3>
-    <p>The same command classes run in-process inside a host that supplies credentials, identity, and policy per request and keeps connections warm.</p>
+    <p>The same command classes run in-process inside a host
+    that supplies credentials, identity, and policy per
+    request, keeps connections warm, and caches expensive
+    logins per instance. A gateway built on it works with
+    the enterprise's own identity provider and secrets
+    vault.</p>
+  </div>
+  <div class="card">
+    <h3>Declared safety</h3>
+    <p>Mutability, blast radius, reversibility, and
+    idempotency are declared on every command. A policy
+    check
+    can refuse it before its code loads. Every mutation
+    accepts <code>--dry-run</code>, demands
+    <code>--confirm</code> where its metadata says so, and
+    writes an audit line after every run.</p>
   </div>
 </div>
 
 <h2>The introspection-first workflow</h2>
 
-<p>An agent needs no documentation beyond the binary.</p>
+<p>An agent needs no documentation beyond the binary, and
+nothing before the last step touches the API.</p>
 
 <pre><code>aclif discover --json                          # every provider, its tier, whether credentials are configured
 aclif learn salesforce --json                  # a briefing: topics, key fields, query syntax, auth paths
@@ -75,50 +141,158 @@ aclif salesforce data query --examples         # runnable examples with the resp
 aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 5" --dry-run
 aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 5" --json</code></pre>
 
-<p>Every result is one envelope. The <code>_context</code> block carries pagination with the exact next command, the fields available, and related commands worth running.</p>
+<p>The envelope's <code>_context</code> block holds
+pagination with the exact next command, the fields
+available, and related commands worth running. Exit codes
+are 0, 1 (API), 2 (usage), 3 (authentication). The contract
+and its JSON Schemas are in
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONTRACT.md">CONTRACT.md</a>.</p>
 
-<pre><code>{
-  "success": true,
-  "result": {"records": [{"Id": "001xx", "Name": "Acme"}], "totalSize": 1, "done": true},
-  "_context": {
-    "contract": "1.0.0",
-    "pagination": {"returned": 1, "total": 1, "hasMore": false, "nextCommand": null},
-    "relatedCommands": ["aclif salesforce discover --object Account --verbose"]
-  }
-}</code></pre>
+<h2>Three ways to run it</h2>
 
-<h2>Where it runs</h2>
+<p>A vendor CLI is built for one deployment: installed on a
+machine, logged in by the person at the keyboard, one
+process per command. Behind a gateway that fails. Every call
+spawns a process and logs in again, the acting user's
+identity cannot be forwarded, nothing declares what a
+command will do, and nothing is uniform to audit. aclif's
+command classes run unchanged in three places, and whoever
+runs them decides who supplies credentials, enforces policy,
+and keeps the audit trail.</p>
 
-<p>A vendor CLI is built for one deployment: installed on a machine, logged in by the person at the keyboard, one process per command. aclif is one package whose command classes run unchanged in three deployments. The host decides who supplies the credentials, who enforces policy, and who keeps the audit trail.</p>
+<ul>
+  <li><strong>Run by the agent.</strong> The agent process
+  spawns the binary, executes the command, and reads the
+  JSON it returns. Credentials come from flags, environment
+  variables, or a profile in the agent's own environment.
+  Use this when one agent, one operator, and one set of
+  credentials share a trust boundary.</li>
+  <li><strong>Run by a host application, the design-time
+  case.</strong> An application sits between the model and
+  aclif and holds the credentials. The model calls a tool
+  the application defines, and the application executes the
+  command, in-process or by passing a command string to the
+  CLI. A person or an authoring tool uses this to let a
+  model discover providers, introspect commands, and
+  validate the exact command it will write into an agent.
+  Use this when the
+  model must never hold credentials and tool definitions
+  must stay out of its context.</li>
+  <li><strong>Run by a gateway, the runtime case.</strong> A
+  deployed agent submits commands, and one long-lived
+  process serves many such agents. The gateway resolves
+  credentials from the enterprise vault per request, checks
+  policy against the acting user, records every call, and
+  keeps connections warm. The agents hold no provider
+  credentials and cannot widen their own scope. Use this
+  when many agents share providers and one place must hold
+  policy and audit.</li>
+</ul>
 
 <div class="table-wrap">
 <table>
-<thead><tr><th></th><th>Binary on PATH</th><th>Tool call, in-process</th><th>Gateway</th></tr></thead>
+<thead><tr><th></th><th>Run by the agent</th><th>Run by a
+host application</th><th>Run by a gateway</th></tr></thead>
 <tbody>
-<tr><td>Credentials</td><td>flags, env, <code>config.yaml</code></td><td>host-supplied resolver</td><td>vault-backed resolver, per request</td></tr>
-<tr><td>Policy</td><td><code>config.yaml</code></td><td><code>capabilityGate</code> hook</td><td><code>capabilityGate</code> plus the host's middleware</td></tr>
-<tr><td>Identity</td><td><code>--identity-token</code> or env</td><td><code>context.user</code></td><td><code>context.user</code> and SSO claims from the request</td></tr>
-<tr><td>Audit</td><td>stderr line per run</td><td>reporter events</td><td>reporter events, recorded by the host</td></tr>
-<tr><td>Connections</td><td>file session cache</td><td>runtime pool</td><td>runtime pool, keyed per tenant and identity</td></tr>
+<tr><td>Credentials</td><td>flags, env,
+<code>config.yaml</code></td><td>host-supplied resolver</td><td>vault-backed
+resolver, per request</td></tr>
+<tr><td>Policy</td><td><code>config.yaml</code></td><td><code>capabilityGate</code>
+hook</td><td><code>capabilityGate</code> plus the host's
+middleware</td></tr>
+<tr><td>Identity</td><td><code>--identity-token</code> or
+env</td><td>the acting user on the invocation</td><td>the
+acting user and SSO claims from the request</td></tr>
+<tr><td>Audit</td><td>stderr line per run</td><td>reporter
+events</td><td>reporter events, recorded by the host</td></tr>
+<tr><td>Connections</td><td>file session cache</td><td>runtime
+pool</td><td>runtime pool, keyed per instance and identity</td></tr>
 </tbody>
 </table>
 </div>
 
-<p>Details for each deployment are on the <a href="embedding.html">Embedding</a> page.</p>
+<p>Details on the <a href="embedding.html">Embedding</a>
+page.</p>
 
-<h2>Start</h2>
+<h2>Gateway deployments</h2>
+
+<p>Long-lived, embeddable deployment enables a gateway
+topology where additional security policy can be applied.
+One process the enterprise operates executes every command for
+every agent, and the arrangement provides:</p>
 
 <ul>
-  <li><a href="getting-started.html">Getting started</a>: install the reference binary and run the introspection workflow.</li>
-  <li><a href="build-a-cli.html">Build a CLI</a>: scaffold your own binary with your own name and providers.</li>
-  <li><a href="providers.html">Providers</a>: what ships, the three tiers, and how a new provider is written.</li>
-  <li><a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONTRACT.md">The contract</a>: the envelope, errors, exit codes, metadata, and the JSON Schemas behind them.</li>
+  <li><strong>Credentials in one place.</strong> Resolved
+  inside the gateway, per request, from the enterprise's
+  vault. Agents hold none.</li>
+  <li><strong>Enterprise-wide canonical names.</strong>
+  Tenant catalogs and alias sets are held by the gateway, so
+  every agent uses the same names for the same records
+  across every provider and instance.</li>
+  <li><strong>Every call attributed to a person.</strong>
+  The acting user's identity travels with each call into the
+  policy check and the audit record, even through a shared
+  service account.</li>
+  <li><strong>Policy enforced once.</strong> Every command
+  declares what it will do, and the gateway checks that
+  declaration before the command's code loads. Agents cannot
+  widen their own scope.</li>
+  <li><strong>One audit trail.</strong> The same event for
+  every command from every agent, naming the user, the
+  command, and the outcome.</li>
+
 </ul>
+
+<h2>Install, or build your own</h2>
+
+<pre><code>npm install -g @aclif/core
+
+# Your org's My Domain URL, no trailing slash
+export SF_INSTANCE_URL=https://example.my.salesforce.com
+
+# A session token from the Salesforce CLI (sf org login web first if needed)
+export SF_ACCESS_TOKEN=$(sf org auth show-access-token -o me@example.com --json | jq -r .result.accessToken)
+
+aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 3" --json</code></pre>
+
+<p>Without the Salesforce CLI, use an API user. Salesforce
+emails the security token when the password is set or reset:</p>
+
+<pre><code>export SF_INSTANCE_URL=https://example.my.salesforce.com SF_USERNAME=me@example.com SF_PASSWORD=... SF_SECURITY_TOKEN=...
+aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 3" --json</code></pre>
+
+<p>The <code>aclif</code> binary ships with every built-in
+provider and needs Node 22 or later. The binary you ship is
+yours: one scaffold command produces a CLI with its own
+name, its own config directory, its own environment
+variables, and only the providers it chose. See
+<a href="getting-started.html">Getting started</a> and
+<a href="build-a-cli.html">Build a CLI</a>.</p>
+
+<h2>Providers</h2>
+
+<p>Salesforce, ServiceNow, DocuSign, and Agentforce are
+native and are included in every release. Google Workspace
+(Gmail, Calendar) is contributed. A private tier holds
+providers a fork keeps to itself, under a path upstream
+never commits to. Writing a provider takes little effort: it
+is a direct translation of the platform's API specification
+onto the command surface, a coding agent does it from a
+sample prompt in the repository, and the conformance suite
+checks the result. See <a href="providers.html">Providers</a>.</p>
+
+<p>aclif is MIT licensed. Contributions follow
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>;
+the guide for people and coding agents changing the
+framework is
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/AGENTS.md">AGENTS.md</a>.</p>
 </main>
 
 <footer class="site">
   <div class="inner">
-    aclif is MIT licensed. Source, issues, and documentation at <a href="https://github.com/agent-cli-framework/aclif">github.com/agent-cli-framework/aclif</a>.
+    <span>aclif is MIT licensed. Copyright (c) 2026 Prompt
+    One, Inc.</span>
+    <a class="gh-button" href="https://github.com/agent-cli-framework/aclif" aria-label="aclif on GitHub" title="github.com/agent-cli-framework/aclif"><svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
   </div>
 </footer>
 </body>

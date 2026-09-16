@@ -61,12 +61,12 @@ header.site .inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem 2rem;
 }
 header.site .brand {
   display: flex;
   align-items: center;
-  margin-right: auto;
   text-decoration: none;
 }
 header.site .brand img {
@@ -74,10 +74,17 @@ header.site .brand img {
   height: 44px;
   width: auto;
 }
+/* The text links sit centred between the logo and the GitHub button, which is
+   pinned to the right edge; the padding reserves the button's column so the
+   centring excludes it. */
 header.site nav {
+  position: relative;
+  flex: 1 1 auto;
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.4rem 1.5rem;
+  padding-right: calc(20px + 2rem);
 }
 header.site nav a {
   position: relative;
@@ -102,6 +109,10 @@ header.site nav a:hover,
 header.site nav a[aria-current="page"] { color: var(--fg100); }
 header.site nav a:hover::after,
 header.site nav a[aria-current="page"]::after { transform: scaleX(1); }
+header.site nav a.gh { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; color: var(--fg200); padding: 0; }
+header.site nav a.gh::after { display: none; }
+header.site nav a.gh:hover { color: var(--accent100); }
+header.site nav a.gh svg { display: block; }
 
 /* Prose: the site's Article shell */
 main {
@@ -211,7 +222,7 @@ tr:nth-child(even) td { background: rgba(0, 0, 0, 0.02); }
   color: var(--fg300);
 }
 
-/* Footer: faint top rule, small blue-slate text */
+/* Footer: faint top rule, small blue-slate text, square GitHub tile as on the site */
 footer.site {
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   background: var(--bg100);
@@ -222,6 +233,74 @@ footer.site .inner {
   max-width: var(--max);
   margin: 0 auto;
   padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
-footer.site a { color: var(--fg400); text-decoration: none; }
-footer.site a:hover { color: var(--accent100); }
+footer.site a.gh-button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--bg300);
+  color: var(--fg300);
+  text-decoration: none;
+  transition: background 150ms ease, color 150ms ease;
+}
+footer.site a.gh-button:hover { background: var(--accent100); color: #fff; }
+footer.site a.gh-button svg { display: block; }
+
+/* FAQ: one expandable block per question, numbered, matching the card panels */
+details.faq {
+  background: var(--bg200);
+  border: 1px solid var(--bg400);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  margin: 0.75rem 0;
+  transition: box-shadow 150ms ease;
+}
+details.faq:hover, details.faq[open] { box-shadow: var(--shadow-card-hover); }
+details.faq summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.9rem 1.25rem;
+  color: var(--fg100);
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+details.faq summary::-webkit-details-marker { display: none; }
+details.faq summary .num {
+  flex: none;
+  color: var(--accent100);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 1.5rem;
+}
+details.faq summary .q { flex: 1 1 auto; }
+details.faq summary::after {
+  content: "+";
+  flex: none;
+  color: var(--fg300);
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform 150ms ease;
+}
+details.faq[open] summary::after { content: "\2212"; }
+details.faq .answer {
+  padding: 0 1.25rem 0.5rem calc(1.25rem + 1.5rem + 0.75rem);
+  border-top: 1px solid var(--bg400);
+}
+details.faq .answer > :first-child { margin-top: 1rem; }
+@media (max-width: 600px) {
+  details.faq .answer { padding-left: 1.25rem; }
+}

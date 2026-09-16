@@ -8,14 +8,17 @@ Static HTML with one stylesheet and no build step. `.nojekyll` tells Pages to se
 |---|---|
 | `index.html` | What aclif is, why a CLI, what an agent gets, where it runs |
 | `getting-started.html` | Install, credentials, the introspection workflow, reading the envelope |
-| `build-a-cli.html` | Scaffolding a CLI with its own name and providers |
-| `embedding.html` | The runtime, the three deployments, what a host supplies |
-| `providers.html` | Shipped providers, the three tiers, writing a provider, catalogues, aliases, manifests |
+| `build-a-cli.html` | Scaffolding a CLI with its own name and providers, provider instances, writing a provider |
+| `embedding.html` | The runtime, the three ways to run it, the gateway with SSO and a vault, what a host supplies |
+| `providers.html` | Shipped providers, the three tiers, writing a provider, tenant catalogs, canonical names, manifests |
+| `faq.html` | Developer FAQ, the most current statement of the argument: access via aclif versus an MCP server, the three ways to run it, runtime requirements, gateway credentials and shared service accounts, context cost and design-time command selection, providers and instances, custom APIs, tenant customizations, canonical names, errors, introspection and quota |
 
 ## Publishing
 
-The repository is private while the aclif repository is private. To publish: make this repository public, then in Settings, Pages, set the source to the `main` branch, root folder, and the custom domain to `aclif.io`. The `CNAME` file in this repository holds that domain; GitHub rewrites it if the setting changes. DNS for `aclif.io` is four A records and four AAAA records to GitHub Pages, with `www` as a CNAME to `agent-cli-framework.github.io`.
+The repository is public and GitHub Pages serves `main` from the root folder at https://www.aclif.ai, with `aclif.ai` redirecting to it. GitHub wrote the `CNAME` file when the custom domain was set in Settings, Pages. It holds `www.aclif.ai` and should not be edited by hand, since a change here changes the domain setting.
+
+DNS at Hover: four A records and four AAAA records on `aclif.ai` pointing at GitHub Pages, and `www` as a CNAME to `agent-cli-framework.github.io`. Once the certificate is issued, turn on "Enforce HTTPS" in the same settings page.
 
 ## Editing
 
-Every page carries the same header and footer; edit them in all five files together. Content follows the aclif repository's documentation, and the deep links point at `docs/` on the `main` branch, so a renamed document there needs the matching link changed here.
+Every page has the same header and footer. Edit them in all six files together. Content follows the aclif repository's documentation, and the deep links point at `docs/` on the `main` branch, so a renamed document there needs the matching link changed here.
