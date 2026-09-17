@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q2RD0MYB1S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Q2RD0MYB1S');
+</script>
+<title>FAQ | aclif</title>
+<meta name="description" content="Answers for developers evaluating aclif: how it relates to MCP and agent frameworks, what it needs to run, how safety metadata and confirmation work, how credentials and connections are handled behind a gateway, and how to add your own APIs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./"><img src="img/aclif-logo.svg" alt="aclif" width="96" height="44"></a>
+    <nav>
+      <a href="./">Overview</a>
+      <a href="getting-started.html">Getting started</a>
+      <a href="build-a-cli.html">Build a CLI</a>
+      <a href="embedding.html">Embedding</a>
+      <a href="providers.html">Providers</a>
+      <a href="faq.html" aria-current="page">FAQ</a>
+      <a class="gh" href="https://github.com/agent-cli-framework/aclif" aria-label="aclif on GitHub" title="GitHub"><svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<h1>Developer FAQ</h1>
+
+<h2>Architecture and protocols</h2>
+
+<details class="faq" id="q1">
+  <summary><span class="num">1</span><span class="q">How
+  is access via aclif different from using an MCP
+  server?</span></summary>
+  <div class="answer">
+
+<p>With an MCP server, the agent reaches an API through a
+process definition someone described and deployed. That
+server publishes a list of tools, the agent picks one, and
+the
+server executes it.
+With aclif, the agent reaches the API through a command it
+composes itself. The agent asks the command to describe its
+structure
+and provide examples. It then composes the exact command
+required, runs it, and gets one JSON document back. MCP is a
+protocol between a model and a server. aclif is a tool the
+agent runs directly.</p>
+
+<p>For many agent use cases, using MCP imposes unnecessary
+operational and economic costs. aclif was designed to
+eliminate these costs. The economic cost is context. Every
+tool an MCP server lists occupies the agent's context and
+consumes tokens on every turn. The server's author therefore
+chooses between coverage and cost. Many tools keep the whole
+API reachable. A few broad operations stay cheap but cannot
+express everything the API can do. A host
+can lower the cost with tool filtering or deferred loading,
+or a server could publish a generic call tool. Each of those
+is a design-time decision, made per server by whoever builds
+or configures it, and it sets which operations the agent
+can ever reach. Each deployed server has an operational
+cost as well. Each is its own process to deploy, secure,
+and keep current,
+with its own grammar, login, error format, and names for
+the same things. An agent that works across several
+platforms needs a server for each.</p>
+
+<p>aclif resolves the trade-off. A command's definition
+loads only when the agent asks for it with
+<code>--schema</code> or <code>--examples</code>, so the
+full API surface of every provider is reachable at no
+standing cost in context. Every provider shares one grammar,
+one JSON envelope, one error vocabulary, and declared safety
+metadata. Canonical names let an agent call a record
+<code>customer</code> whether the provider stores it as
+<code>Account</code> or <code>core_company</code>. A
+protocol does not supply any of this on its own.</p>
+
+<p>The larger difference is when the command is chosen.
+An MCP tool call is decided by the model at run time, on
+every run. For many agentic workflows, the aclif command
+can be determined once, at design time: a person or an
+authoring tool discovers the provider, introspects the
+command, and writes the exact command string into the
+workflow. At run time that command executes as ordinary
+code, with no model in the loop. Execution is deterministic,
+and the inference cost is zero. The command is chosen at
+design time, and the authority to run it, the credential,
+the acting identity, and the policy, is supplied at run time
+by whatever runs it. Neither side ever holds both.</p>
+  </div>
+</details>
+
+<details class="faq" id="q2">
+  <summary><span class="num">2</span><span class="q">How is
+  it deployed?</span></summary>
+  <div class="answer">
+
+<p>aclif can run in three ways. Any agent framework, or a
+hand-written loop, can use any of them, since every result
+is just a JSON document.</p>
+
+<ul>
+  <li><strong>Run by the agent.</strong> The agent process
+  spawns the binary, executes the command, and reads the
+  JSON it returns. Credentials come from flags, environment
+  variables, or a profile in the agent's own environment.
+  Use this when one agent, one operator, and one set of
+  credentials share a trust boundary.</li>
+  <li><strong>Run by a host application, the design-time
+  case.</strong> An application sits between the model and
+  aclif and holds the credentials. The model calls a tool
+  the application defines, and the application executes the
+  command, in-process or by passing a command string to the
+  CLI. An authoring tool uses this to let a model discover
+  providers, introspect commands, and validate the exact
+  command it will write into an agent. Use this when the
+  model must never hold credentials and tool definitions
+  must stay out of its context.</li>
+  <li><strong>Run by a gateway, the runtime case.</strong> A
+  deployed agent submits commands, and one long-lived
+  process serves many such agents. The gateway resolves
+  credentials from the enterprise vault per request, checks
+  policy against the acting user, records every call, and
+  keeps connections warm. The agents hold no provider
+  credentials and cannot widen their own scope. Use this
+  when many agents share providers and one place must hold
+  policy and audit.</li>
+</ul>
+
+<p>Details, including the minimal host code, are on the
+<a href="embedding.html">Embedding</a> page.</p>
+  </div>
+</details>
+
+<details class="faq" id="q3">
+  <summary><span class="num">3</span><span class="q">What
+  are the runtime requirements?</span></summary>
+  <div class="answer">
+
+<p>aclif needs Node.js 22 or later and nothing else.
+<code>@aclif/core</code> is an npm package with a binary
+attached, written in TypeScript and built on oclif. Its
+continuous integration runs on Linux and Windows under Node
+22 and 24.</p>
+  </div>
+</details>
+
+<h2>Safety, security, and context</h2>
+
+<details class="faq" id="q4">
+  <summary><span class="num">4</span><span class="q">How
+  does a gateway handle credentials?</span></summary>
+  <div class="answer">
+
+<p>A gateway is meant to sit inside an enterprise that
+already has an identity provider and a secrets vault. The
+agents that call it hold no SaaS credentials. Each request
+to the gateway includes the agent source and the user's
+SSO identity token. The gateway verifies it and attaches
+that identity and the token's claims to the aclif
+invocation,
+where every command, hook, and audit event can read
+them.</p>
+
+<p>Credentials come from the vault.
+aclif defines a one-method <code>CredentialResolver</code>
+interface and includes resolvers for static values,
+environment variables, and config-file profiles. A vault
+resolver is not included, since every vault has its own
+API. The gateway author needs to write one: a small class
+with
+that single method, which looks up the entry for the
+current request in the enterprise vault and returns it.
+The framework calls it before each command and hands the
+secret to the provider client and nowhere else. The secret
+never reaches the agent, the response, or any log.</p>
+
+<p>The identity stays with the call, so policy is checked
+against the user before a command runs and the audit record
+names who ran it.</p>
+  </div>
+</details>
+
+<details class="faq" id="q5">
+  <summary><span class="num">5</span><span class="q">How
+  does a gateway handle shared service
+  accounts?</span></summary>
+  <div class="answer">
+
+<p>A shared service account is one credential for a
+provider instance that many users and agents act through,
+such as an integration user in a CRM. It lives in the
+vault as one entry per organization, provider, and
+instance. The gateway's credential resolver returns it when
+the calling agent is entitled to it, and the
+provider client authenticates with it the same way it
+would with any other credential. Nothing in the framework
+treats it as a special case.</p>
+
+<p>A gateway can still attribute each call to a person and
+limit what the shared account may do. The user's identity
+travels with every call, so the
+gateway can produce a record that names the person who
+ran the
+command even though the target system sees only the
+service account.</p>
+  </div>
+</details>
+
+<details class="faq" id="q6">
+  <summary><span class="num">6</span><span class="q">How
+  does aclif save tokens in the context
+  window?</span></summary>
+  <div class="answer">
+
+<p>The token cost aclif targets is tool definitions. A tool
+server
+publishes its tools up front, and each definition sits in
+the agent's context on every turn whether or not the task
+needs it. For a full enterprise API that could be hundreds
+of
+definitions. An agent that accesses several platforms
+multiplies the count, because each platform brings its own
+tool set, its own grammar and namespace, and the agent has
+to hold all of them at once.</p>
+
+<p>aclif inverts the loading. One tool 
+describes the grammar for them all. The agent asks for a
+command's
+definition at the moment it needs it and pays nothing for
+the rest. Because the grammar and the envelope are the
+same for every provider, adding a platform adds no new
+grammar to learn, and canonical names mean one vocabulary
+across all of them, so the context an agent holds stays
+about the same size whether it reaches one platform or
+five.</p>
+
+<p>An agent that executes a defined workflow can remove
+the model from the call altogether by fixing the command at
+design time, as described in
+<a href="#q1">question 1</a>.</p>
+  </div>
+</details>
+
+<h2>Supported providers</h2>
+
+<details class="faq" id="q7">
+  <summary><span class="num">7</span><span class="q">Do I
+  need a provider for every external service an agent
+  accesses via aclif?</span></summary>
+  <div class="answer">
+
+<p>Yes. A provider is what maps a platform's API onto
+the command surface. The provider supplies the client, the
+credential schema, the error classifier, and the commands
+with their safety metadata and examples. The framework
+derives everything else from those declarations: auth
+flags, environment variables, profiles, etc.</p>
+  </div>
+</details>
+
+<details class="faq" id="q8">
+  <summary><span class="num">8</span><span class="q">What
+  providers are available today?</span></summary>
+  <div class="answer">
+
+<p>Five, all included in the <code>aclif</code>
+binary.</p>
+
+<ul>
+  <li><strong>Salesforce</strong> (native): SOQL and SOSL
+  queries, aggregates, DML, object and field metadata,
+  permissions, Apex classes and triggers, and debug
+  logs.</li>
+  <li><strong>ServiceNow</strong> (native): table queries,
+  aggregates, DML, table and field metadata, full-text
+  search, and server-side scripts.</li>
+  <li><strong>DocuSign</strong> (native): envelopes, from
+  creating and sending to listing, downloading, and
+  deleting.</li>
+  <li><strong>Agentforce</strong> (native): listing agents,
+  and starting, messaging, and ending sessions with
+  them.</li>
+  <li><strong>Google Workspace</strong> (contributed): Gmail
+  (query, read, send, reply, attachments) and Google
+  Calendar.</li>
+</ul>
+
+<p>Native providers are maintained by the project and are
+included in every release, with live smoke tests against
+real instances. Contributed providers are maintained by the
+people who wrote them and are packaged with the aclif
+release. Private providers are kept by one deployment and
+never ship upstream. All three tiers run through the
+same conformance suite.</p>
+
+<p>More native providers are planned for future releases,
+and contributed providers are welcome. See
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
+  </div>
+</details>
+
+<details class="faq" id="q9">
+  <summary><span class="num">9</span><span class="q">Can
+  an agent work with two instances of the same
+  provider?</span></summary>
+  <div class="answer">
+
+<p>Yes. An instance is one deployment of a platform, such
+as a single Salesforce org, with its own credentials and
+its own customizations. Two Salesforce orgs are two
+instances of the Salesforce provider.</p>
+
+<p>Each instance has its own tenant catalog, captured with
+<code>introspect --bootstrap</code>, so <code>learn</code>
+and <code>--schema</code> describe that instance's own
+custom objects and fields.</p>
+
+<p>Canonical names span instances the same way they span
+providers: an alias set can map <code>customer</code> to
+<code>Account</code> in one org and to a custom object in
+the other, and <code>--canonical</code> resolves it for
+whichever instance the command names.</p>
+  </div>
+</details>
+
+<details class="faq" id="q10">
+  <summary><span class="num">10</span><span class="q">How
+  much effort is it to write a new
+  provider?</span></summary>
+  <div class="answer">
+
+<p>The effort is small if a coding agent writes it. Most of
+a
+provider is a direct translation of the platform's API
+specification: each operation becomes a command, its
+parameters become flags, its enumerations become flag
+options, and its method and path decide the safety
+metadata. That translation is tedious for a person but
+trivial for Claude Code, Codex, or a similar tool.</p>
+
+<p>The aclif repository provides a sample generation prompt
+in
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/PROVIDER_AUTHORING.md">PROVIDER_AUTHORING.md</a>,
+an AGENTS.md for coding agents, and an add-provider skill
+for Claude Code. The agent generates the provider, runs the
+conformance suite, and fixes what fails. You review the
+result. Details are in the repository.</p>
+  </div>
+</details>
+
+<h2>Aliases, canonical names, and semantic data</h2>
+
+<details class="faq" id="q11">
+  <summary><span class="num">11</span><span class="q">How
+  does aclif handle canonical names across
+  providers?</span></summary>
+  <div class="answer">
+
+<p>With alias sets. An alias set is a JSON or YAML file
+that maps a canonical entity name, and the field
+names under it, to the native name each provider and
+instance uses. One set can say that <code>customer</code>
+is <code>Account</code> in one Salesforce instance,
+<code>Customer__c</code> in a second Salesforce instance,
+and <code>core_company</code> in ServiceNow. A starter
+vocabulary is included with the framework, covering
+customers, contacts, people, opportunities, incidents,
+email, calendar events, and envelopes across the built-in
+providers.</p>
+
+<p>An organization writes its own alias set from the
+material the CLI gives it, and the framework resolves it.
+<code>introspect --bootstrap</code>
+captures each instance's catalog of objects, fields, and
+enumerations, one catalog per instance, and comparing two
+catalogs is how a person or an authoring agent decides
+that this instance's <code>Account</code> and that one's
+<code>Customer__c</code> are both <code>customer</code>.
+The result is a file. <code>aliases validate</code> checks
+its structure and that every provider it names is one the
+CLI has, and <code>aliases import</code> puts it in use,
+layered above the starter vocabulary so an organization's
+own mapping wins where the two overlap.</p>
+
+<p>A command resolves the names when it runs with
+<code>--canonical</code>. The CLI looks up each entity and
+field for the command's provider and instance through the
+sets in use, and sends the native names to the API.</p>
+
+<p>The native names stay reachable. An agent that knows an
+instance's real object and field names can use them
+directly, and an agent that only knows the canonical
+vocabulary can work across every provider and instance
+the organization has mapped. Inside a gateway the host
+supplies the alias store, so the mappings live with the
+organization's other configuration.</p>
+  </div>
+</details>
+
+<details class="faq" id="q12">
+  <summary><span class="num">12</span><span class="q">Canonical
+  mapping is a notoriously hard problem. Whole product lines
+  exist to solve it with a semantic data layer. What makes
+  you think aclif can solve it?</span></summary>
+  <div class="answer">
+
+<p>It does not try to. General-purpose data unification,
+the problem a semantic layer or a data warehouse takes on,
+is a large engineering effort, and aclif does not attempt
+to solve that problem. It works on a much narrower, tightly
+constrained
+subset: naming the entities and fields an agent acts on,
+so that a command an agent composes once runs against
+whichever provider and instance it names. That is action
+execution, and the constraints are what make it
+practical.</p>
+
+<ul>
+  <li><strong>The mapping is a data file.</strong> No
+  provider is written to understand every enterprise
+  customization natively. Each instance's custom objects
+  and fields are captured into a tenant catalog at deploy
+  time, and an alias set is a plain file that maps a
+  canonical name such as <code>customer</code> onto that
+  instance's own object, such as
+  <code>Account_Custom_v2</code>. The framework resolves
+  the file at run time and sends the native names to the
+  API.</li>
+  <li><strong>The work happens at design time.</strong>
+  Nothing is inferred by a model during an automated run.
+  A person or an authoring agent compares two catalogs,
+  decides that this instance's <code>Account</code> and
+  that one's <code>Customer__c</code> are both
+  <code>customer</code>, and records that decision once.
+  When the schema changes, the operator recaptures the
+  catalog and edits the alias set. The framework and the
+  agent's own commands stay as they are.</li>
+  <li><strong>Every miss is a structured error.</strong>
+  A canonical name the alias set does not know fails
+  locally, before any request leaves the machine, with
+  <code>CANONICAL_NOT_FOUND</code> and the nearest matches.
+  A native field the platform rejects comes back as
+  <code>INVALID_FIELD</code> with the corrected value and a
+  working example. In both cases the agent gets one JSON
+  document that names the failure and the fix, and it can
+  correct the command in one turn instead of guessing.
+  <code>--schema</code> and <code>--flags-for</code> let it
+  check the command before running it at all.</li>
+</ul>
+
+<p>So aclif is not a semantic layer. It is a uniform
+command grammar, with a lookup table in front of it, that
+an agent can use safely. The entity and field names an
+organization already has, whether from custom objects or
+an existing glossary, can be written into that table.</p>
+  </div>
+</details>
+
+<details class="faq" id="q13">
+  <summary><span class="num">13</span><span class="q">Can I
+  drive the canonical vocabulary from my existing semantic
+  layer, business glossary, or enterprise data
+  dictionary?</span></summary>
+  <div class="answer">
+
+<p>Yes, for the part of it that names things. Semantic
+layers and metric models are built for data warehouses and
+analytics platforms, where the physical side is a warehouse
+table,
+an analytical copy of the operational systems. aclif's
+target use case is the operational systems themselves:
+live SaaS instances and external service endpoints that
+are the source of record, reached through their own APIs.
+A warehouse with an API could be wrapped as a provider
+like any other, but that is not the case the framework is
+built around. An alias set's native side is an object in
+one of those instances, as captured in its tenant
+catalog.</p>
+
+<p>What transfers directly is the naming half of a
+semantic model: its logical entities, the dimensions or
+attributes under them, and the synonyms a glossary attaches
+to each. Those map one to one onto alias-set entities and
+fields, with the business term as the canonical name. An
+alias set is a JSON or YAML file with a small published
+structure, so anything that can write the file can drive
+the vocabulary. The glossary supplies the canonical side,
+the tenant catalog for each instance supplies the native
+side, <code>aliases validate</code> checks the result, and
+<code>aliases import</code> puts it in use above the
+starter vocabulary.</p>
+
+<p>Building the alias set from the semantic layer is
+therefore a re-target. The semantic
+layer's business names become the alias set's canonical
+names. The semantic layer's references to warehouse tables
+are set aside, unless the warehouse is itself one of the
+instances the agent acts on. In their place, each
+canonical name is bound to the native object in the tenant
+catalog of the live instance. Where the warehouse was
+loaded from those same source objects, its lineage usually
+names them.</p>
+  </div>
+</details>
+
+<h2>Development and error handling</h2>
+
+<details class="faq" id="q14">
+  <summary><span class="num">14</span><span class="q">Can I
+  add my own internal or proprietary APIs?</span></summary>
+  <div class="answer">
+
+<p>Yes, in one of two ways, depending on how much of the
+API the agent needs.</p>
+
+<ul>
+  <li><strong>One endpoint: a manifest.</strong> A JSON
+  document declares the command id, description, safety
+  metadata, a request template with method, path, query, and
+  body containing <code>{flag}</code> placeholders, the
+  flags, and optionally a response structure and examples.
+  It is loaded from a profile in <code>config.yaml</code> or
+  added by a host.</li>
+  <li><strong>A whole API: a provider.</strong> You write a
+  TypeScript provider in the private tier of your own CLI,
+  to the same contract as the native providers, usually by
+  having a coding agent generate it from the API's OpenAPI
+  document.</li>
+</ul>
+
+<p>See
+<a href="providers.html">Providers</a>,
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/PROVIDER_AUTHORING.md">PROVIDER_AUTHORING.md</a>,
+and
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/BUILDING_A_CLI.md">BUILDING_A_CLI.md</a>.</p>
+  </div>
+</details>
+
+<details class="faq" id="q15">
+  <summary><span class="num">15</span><span class="q">How
+  does aclif handle an instance's custom objects and
+  instance-specific endpoints?</span></summary>
+  <div class="answer">
+
+<p>By learning them from the instance itself. A
+provider's commands cover the platform's API as the
+vendor documents it, but every instance adds custom objects,
+custom fields on standard objects, its own picklist
+values, and sometimes endpoints of its own. None of that
+is in any specification, so aclif captures it from the
+live instance at deploy time and keeps it in a tenant
+catalog. A new custom object added later is picked up the
+same way, with no change to the provider and no
+rebuild.</p>
+
+<p><code>&lt;provider&gt; introspect --bootstrap</code>
+walks the instance once, under the operator's credentials,
+and records each custom entity and each custom field on a
+standard entity, with its type, label, enumerated values,
+and the entities it references. The walk is read-only and
+the catalog holds structure only, never record values or
+secrets. It is cached per provider and instance, so two
+Salesforce orgs get two catalogs. Each entry records how
+it was learned: from the platform's metadata API, inferred
+from a sample record, or found by a probe.
+<code>--refresh</code> recaptures after the instance
+changes, and <code>--all</code> widens the walk to every
+entity.</p>
+
+<p>Once the catalog exists, every other command reads it
+without a further API call. <code>learn</code> lists the
+instance's own entities in its briefing,
+<code>--schema</code> reports them as available entities
+on the commands that take one, and an alias set can map a
+canonical name onto a custom object, so an agent that
+knows only <code>customer</code> reaches
+<code>Customer__c</code>. An endpoint the instance added
+outside the platform's standard API is declared as a
+manifest, described in the previous question, and joins
+the same command surface.</p>
+  </div>
+</details>
+
+<details class="faq" id="q16">
+  <summary><span class="num">16</span><span class="q">What
+  is different about aclif's errors?</span></summary>
+  <div class="answer">
+
+<p>Every error tells the agent what went wrong so it can
+recover in a single turn. Each error names the failure and
+includes the command that fixes it. </p>
+
+<pre><code>{
+  "success": false,
+  "error": {
+    "code": "INVALID_FIELD",
+    "message": "No such column 'Cases' on entity 'Case'.",
+    "correctedValue": "SELECT AccountId, COUNT(Id) Cases FROM Case GROUP BY AccountId ORDER BY COUNT(Id) DESC",
+    "syntaxGuide": "Salesforce SOQL does not allow ORDER BY on aggregate aliases. ...",
+    "workingExample": "SELECT AccountId, COUNT(Id) Cases FROM Case GROUP BY AccountId ORDER BY COUNT(Id) DESC LIMIT 10"
+  }
+}</code></pre>
+  </div>
+</details>
+
+<details class="faq" id="q17">
+  <summary><span class="num">17</span><span class="q">Does
+  introspection consume SaaS API quota?</span></summary>
+  <div class="answer">
+
+<p>No. Every command accepts seven introspection flags,
+each of which returns before the command executes:
+<code>--schema</code>, <code>--examples</code>,
+<code>--shape</code>, <code>--changelog</code>,
+<code>--discover</code>,
+<code>--flags-for &lt;category&gt;</code>, and
+<code>--estimate</code>. They return static data the
+command declares about itself: its flags and arguments,
+its safety metadata, its worked examples with the
+responses they produce, and the structure of its result.
+No request leaves the machine, so no credentials
+are needed and no API call is counted. An agent can work
+through the whole discover, learn, introspect, preview
+loop against a rate-limited instance and spend nothing.</p>
+
+  </div>
+</details>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <span>aclif is MIT licensed. Copyright (c) 2026 Prompt
+    One, Inc.</span>
+    <a class="gh-button" href="https://github.com/agent-cli-framework/aclif" aria-label="aclif on GitHub" title="github.com/agent-cli-framework/aclif"><svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# aclif logo: the PromptOne button, widened, with "aclif" in place of the bar.
+# aclif logo: the Prompt One button, widened, with "aclif" in place of the bar.
 # Needs fontTools and Inter-Bold.ttf (Google Fonts, OFL) next to this script.
 from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen

@@ -3,7 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Getting started with aclif</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q2RD0MYB1S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Q2RD0MYB1S');
+</script>
+<title>Getting started | aclif</title>
 <meta name="description" content="Install the aclif reference binary, configure credentials, and run the introspection-first workflow.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,23 +25,80 @@
     <a class="brand" href="./"><img src="img/aclif-logo.svg" alt="aclif" width="96" height="44"></a>
     <nav>
       <a href="./">Overview</a>
-      <a href="getting-started.html" aria-current="page">Getting started</a>
+      <a href="getting-started.html" aria-current="page">Getting
+      started</a>
       <a href="build-a-cli.html">Build a CLI</a>
       <a href="embedding.html">Embedding</a>
       <a href="providers.html">Providers</a>
-      <a href="https://github.com/agent-cli-framework/aclif">GitHub</a>
+      <a href="faq.html">FAQ</a>
+      <a class="gh" href="https://github.com/agent-cli-framework/aclif" aria-label="aclif on GitHub" title="GitHub"><svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
     </nav>
   </div>
 </header>
 
 <main>
 <h1>Getting started</h1>
-<p class="lede">The reference CLI is the <code>aclif</code> binary, built with every native and contributed provider. Node 22 or later.</p>
+<p class="lede">The reference CLI is the <code>aclif</code>
+binary, built with every native and contributed provider.
+Requires Node 22 or later.</p>
 
 <h2>Install</h2>
 
-<pre><code>npm install -g aclif
+<pre><code>npm install -g @aclif/core
 aclif discover --json</code></pre>
+
+<h3>Hello providers</h3>
+
+<p>Before you configure anything, the binary will tell you
+what it can do. Every native provider, Salesforce,
+ServiceNow, DocuSign, and Agentforce among them, ships with
+its standard schemas built in, and <code>discover</code>,
+<code>learn</code>, <code>--schema</code>, and
+<code>--examples</code> read them straight from the binary.
+You can walk a provider's commands, flags, and safety
+metadata from a fresh install. Nothing here needs
+credentials:</p>
+
+<pre><code>npm install -g @aclif/core
+
+aclif discover --json                          # every provider, its commands, whether credentials are configured
+aclif learn salesforce --json                  # a briefing: topics, key fields, query syntax, auth paths
+aclif salesforce data query --schema           # flags, args, and safety metadata, without executing
+aclif salesforce data query --examples         # runnable examples with the responses they produce
+aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 3" --dry-run</code></pre>
+
+<p>The dry run prints what the command would do and its
+declared safety metadata:</p>
+
+<pre><code>{
+  "dryRun": true,
+  "wouldExecute": {"query": "SELECT Id, Name FROM Account LIMIT 3"},
+  "aciMetadata": {
+    "mutability": "read",
+    "idempotent": true,
+    "reversible": false,
+    "blastRadius": "filtered_set",
+    "apiCallsConsumed": 1,
+    "requiresConfirmation": false,
+    "prerequisites": []
+  }
+}</code></pre>
+
+<p>Run the same command without <code>--dry-run</code> and,
+with no credentials configured, the error names every way to
+supply them, with exit code 3:</p>
+
+<pre><code>{
+  "success": false,
+  "error": {
+    "code": "NO_CREDENTIALS",
+    "message": "No Salesforce credentials provided.",
+    "syntaxGuide": "Use one of:\n  Session token: --instance-url + --access-token (or SF_INSTANCE_URL, SF_ACCESS_TOKEN)\n  Username + password (+ security token): ...\n  OAuth2 client credentials: --instance-url + --client-id + --client-secret (or SF_INSTANCE_URL, SF_CLIENT_ID, SF_CLIENT_SECRET)"
+  }
+}</code></pre>
+
+<p>To run it for real, point it at an org as described under
+<a href="#credentials">Credentials</a> below.</p>
 
 <p>Or from a checkout:</p>
 
@@ -40,17 +106,37 @@ aclif discover --json</code></pre>
 cd aclif &amp;&amp; npm install &amp;&amp; npm run build
 node bin/run.js discover --json</code></pre>
 
-<p><code>discover</code> lists every provider, its tier, and whether credentials are configured. It needs no credentials itself.</p>
+<p><code>discover</code> lists every provider, its tier, and
+whether credentials are configured. It needs no credentials
+itself.</p>
 
-<h2>Credentials</h2>
+<h2 id="credentials">Credentials</h2>
 
-<p>Credentials resolve in one order: command flags, then environment variables, then a named profile in the config file. Each provider declares its authentication paths once, and the flags, environment names, profile format, and error messages all follow from that declaration.</p>
+<p>Credentials resolve in one order: command flags, then
+environment variables, then a named profile in the config
+file. Each provider declares its authentication paths once,
+and the flags, environment names, profile format, and error
+messages all follow from that declaration.</p>
 
-<pre><code>export SF_INSTANCE_URL=https://example.my.salesforce.com
-export SF_ACCESS_TOKEN=...
+<pre><code># Your org's My Domain URL, no trailing slash
+export SF_INSTANCE_URL=https://example.my.salesforce.com
+
+# A session token from the Salesforce CLI (sf org login web first if needed)
+export SF_ACCESS_TOKEN=$(sf org auth show-access-token -o me@example.com --json | jq -r .result.accessToken)
+
 aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 3" --json</code></pre>
 
-<p>For anything longer than a session, put a profile in <code>~/.config/aclif/config.yaml</code>. Secrets in a profile can be literal, or read from the environment, a file, or a command at credential time, so the file itself need hold no secret.</p>
+<p>Without the Salesforce CLI, use an API user. Salesforce
+emails the security token when the password is set or reset:</p>
+
+<pre><code>export SF_INSTANCE_URL=https://example.my.salesforce.com SF_USERNAME=me@example.com SF_PASSWORD=... SF_SECURITY_TOKEN=...
+aclif salesforce data query --query "SELECT Id, Name FROM Account LIMIT 3" --json</code></pre>
+
+<p>For anything longer than a session, put a profile in
+<code>~/.config/aclif/config.yaml</code>. Secrets in a
+profile can be literal, or read from the environment, a
+file, or a command at credential time, so the file itself
+holds no secret.</p>
 
 <pre><code>default_profile: dev
 profiles:
@@ -59,7 +145,12 @@ profiles:
       instance_url: https://example.my.salesforce.com
       access_token: {env: SF_ACCESS_TOKEN}</code></pre>
 
-<p>Select one with <code>--profile dev</code> or <code>ACLIF_PROFILE=dev</code>. <code>aclif auth status</code> shows which profile and credentials are in effect without printing a secret. The full reference is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONFIGURATION.md">CONFIGURATION.md</a>.</p>
+<p>Select one with <code>--profile dev</code> or
+<code>ACLIF_PROFILE=dev</code>.
+<code>aclif auth status</code> shows which profile and
+credentials are in effect without revealing a secret. The
+full reference is
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONFIGURATION.md">CONFIGURATION.md</a>.</p>
 
 <h2>Learn a provider, then a command</h2>
 
@@ -69,14 +160,28 @@ aclif salesforce data query --examples         # runnable examples with the resp
 aclif salesforce data query --shape            # the structure of a successful result
 aclif salesforce data query --estimate         # rough token cost per record</code></pre>
 
-<p>Every introspection flag returns before the command executes and works with an empty environment. This is the property that lets an agent load a command's definition only at the moment it needs it.</p>
+<p>Every introspection flag returns before the command
+executes and works with an empty environment, so none of
+these calls needs credentials or counts against the instance's
+API quota. This is the property that lets an agent load a
+command's definition only at the moment it needs it and pay
+nothing for the rest. Because every provider shares the same
+grammar, an agent that has learned one command has learned
+the pattern for all of them.</p>
 
 <h2>Run, safely</h2>
 
 <pre><code>aclif salesforce data query --query "SELECT Id FROM Account LIMIT 1" --dry-run
 aclif salesforce data dml --operation delete --object Account --ids 001xx --confirm</code></pre>
 
-<p>Every mutation accepts <code>--dry-run</code>. Commands whose declared metadata marks them as deletes, as touching all records, or as executing code on the target require <code>--confirm</code>, and the policy layer enforces that before the command's code loads. After every run an audit line lands on stderr naming the command, the user, and the exit code.</p>
+<p>Every mutation accepts <code>--dry-run</code>. Commands
+whose declared metadata marks them as deletes, as touching
+all records, or as executing code on the target require
+<code>--confirm</code>, and the policy layer enforces that
+before the command's code loads. After every run an audit
+line writes to stderr naming the command, the user, and the
+exit code, so every call is attributed to a person even when
+it ran through a shared service account.</p>
 
 <h2>Read the result</h2>
 
@@ -84,27 +189,88 @@ aclif salesforce data dml --operation delete --object Account --ids 001xx --conf
 <table>
 <thead><tr><th>Field</th><th>Holds</th></tr></thead>
 <tbody>
-<tr><td><code>success</code></td><td><code>true</code> or <code>false</code></td></tr>
-<tr><td><code>result</code></td><td>the records or the provider's response</td></tr>
-<tr><td><code>_context.pagination</code></td><td>returned, total, <code>hasMore</code>, and <code>nextCommand</code>, a complete command string for the next page</td></tr>
-<tr><td><code>_context.relatedCommands</code></td><td>complete command strings worth running next</td></tr>
-<tr><td><code>error</code></td><td>on failure: <code>code</code>, <code>message</code>, a <code>hint</code> naming the command that fixes it, and where possible a corrected value</td></tr>
+<tr><td><code>success</code></td><td><code>true</code> or
+<code>false</code></td></tr>
+<tr><td><code>result</code></td><td>the records or the
+provider's response</td></tr>
+<tr><td><code>_context.pagination</code></td><td>returned,
+total, <code>hasMore</code>, and <code>nextCommand</code>, a
+complete command string for the next page</td></tr>
+<tr><td><code>_context.relatedCommands</code></td><td>complete
+command strings worth running next</td></tr>
+<tr><td><code>error</code></td><td>on failure:
+<code>code</code>, <code>message</code>, a
+<code>syntaxGuide</code> naming the command that fixes it,
+and where possible a <code>workingExample</code> and a
+<code>correctedValue</code></td></tr>
 </tbody>
 </table>
 </div>
 
-<p>Exit codes are 0 for success, 1 for an API failure, 2 for a usage error, and 3 for missing or rejected credentials, so an agent can branch without parsing prose. The full contract, with the JSON Schemas that validate every envelope, is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONTRACT.md">CONTRACT.md</a>. The agent-facing quick start is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/AGENTS.md">AGENTS.md</a>.</p>
+<p>Exit codes are 0 for success, 1 for an API failure, 2 for
+a usage error, and 3 for missing or rejected credentials, so
+an agent can branch without parsing prose. The full
+contract, with the JSON Schemas that validate every
+envelope, is
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/CONTRACT.md">CONTRACT.md</a>.
+The agent-facing skill is
+<a href="https://github.com/agent-cli-framework/aclif/tree/main/skills/aclif">skills/aclif</a>.</p>
 
 <h2>Give an agent the binary</h2>
 
-<p>Put <code>aclif</code> on the agent's PATH the way a coding agent has <code>git</code>. Point the agent at <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/AGENTS.md">AGENTS.md</a>, or tell it to start with <code>aclif discover --json</code> and use <code>--schema</code> and <code>--examples</code> before running anything. The repository <a href="https://github.com/agent-cli-framework/aclif/blob/main/Dockerfile">Dockerfile</a> builds a standalone image for this deployment.</p>
+<p>An agent that reads or changes Salesforce records on a
+user's behalf reaches Salesforce by running
+<code>aclif</code> commands as a subprocess.</p>
 
-<p>Next: <a href="build-a-cli.html">build a CLI with your own name and providers</a>, or <a href="embedding.html">embed the runtime in a host process</a>.</p>
+<p>Install <code>aclif</code> on the machine where the agent
+runs and put the credentials in that machine's environment.
+Then install the skill. It tells the agent to start with
+<code>aclif discover --json</code>, to read
+<code>--schema</code> and <code>--examples</code> before
+running a command, to dry-run mutations, and to stop on a
+credential failure instead of asking for a token. The skill
+is in the npm package and in the repository at
+<a href="https://github.com/agent-cli-framework/aclif/tree/main/skills/aclif">skills/aclif</a>;
+copy it where your agent loads skills:</p>
+
+<pre><code>cp -r "$(npm root -g)/@aclif/core/skills/aclif" ~/.claude/skills/aclif</code></pre>
+
+<p>For a runtime with no skill support, put the contents of
+<code>SKILL.md</code> in the system prompt. The agent learns
+each command from the binary itself, so the skill is the
+only document it needs;
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/USING_WITH_AGENTS.md">USING_WITH_AGENTS.md</a>
+covers the install for other runtimes and for a CLI built
+from aclif. The repository
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/Dockerfile">Dockerfile</a>
+builds a container with the binary and nothing else, for
+agent sandboxes that cannot install Node.</p>
+
+<p>The agent runs
+<code>aclif learn salesforce --json</code> to get the query
+syntax, reads <code>aclif salesforce data query --schema</code>,
+then runs
+<code>aclif salesforce data query --query "SELECT Id, Name FROM Account WHERE Industry = 'Energy'" --json</code>
+and reads the records out of the envelope. If it tries a
+delete without <code>--confirm</code>, the command returns
+an error and nothing is changed.</p>
+
+<p>For an agent that executes a defined workflow, do the
+discovery once. Run the introspection steps at design
+time, embed the exact command string in the workflow, and
+the agent executes it at run time as ordinary code, with no
+model in the loop and no inference cost for the call.</p>
+
+<p>Next, <a href="build-a-cli.html">build a CLI with your
+own name and providers</a> or <a href="embedding.html">embed
+the runtime in a host process</a>.</p>
 </main>
 
 <footer class="site">
   <div class="inner">
-    aclif is MIT licensed. Source, issues, and documentation at <a href="https://github.com/agent-cli-framework/aclif">github.com/agent-cli-framework/aclif</a>.
+    <span>aclif is MIT licensed. Copyright (c) 2026 Prompt
+    One, Inc.</span>
+    <a class="gh-button" href="https://github.com/agent-cli-framework/aclif" aria-label="aclif on GitHub" title="github.com/agent-cli-framework/aclif"><svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
   </div>
 </footer>
 </body>

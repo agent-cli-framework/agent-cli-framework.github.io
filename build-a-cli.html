@@ -3,7 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Build a CLI on aclif</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Q2RD0MYB1S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Q2RD0MYB1S');
+</script>
+<title>Build a CLI | aclif</title>
 <meta name="description" content="Scaffold a command-line tool with your own name and your own providers on the aclif framework.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,25 +26,33 @@
     <nav>
       <a href="./">Overview</a>
       <a href="getting-started.html">Getting started</a>
-      <a href="build-a-cli.html" aria-current="page">Build a CLI</a>
+      <a href="build-a-cli.html" aria-current="page">Build a
+      CLI</a>
       <a href="embedding.html">Embedding</a>
       <a href="providers.html">Providers</a>
-      <a href="https://github.com/agent-cli-framework/aclif">GitHub</a>
+      <a href="faq.html">FAQ</a>
+      <a class="gh" href="https://github.com/agent-cli-framework/aclif" aria-label="aclif on GitHub" title="GitHub"><svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
     </nav>
   </div>
 </header>
 
 <main>
 <h1>Build your own CLI</h1>
-<p class="lede">aclif is a framework. The binary you ship is yours: it names itself, picks its providers, and gets everything else from the framework.</p>
+<p class="lede">Define your own CLI supporting providers that you choose.</p>
 
 <h2>Scaffold</h2>
 
-<pre><code>npx --package aclif aclif-scaffold-cli --name mycli --dir ../mycli --providers salesforce,servicenow
+<pre><code>npx --package @aclif/core aclif-scaffold-cli --name mycli --dir ../mycli --providers salesforce,servicenow
 cd ../mycli &amp;&amp; npm install &amp;&amp; npm run build
 ./bin/run.js discover --json</code></pre>
 
-<p>Here <code>mycli</code> stands for whatever you name yours. The scaffold writes a small package: a <code>package.json</code> with the oclif configuration, a <code>bin/run.js</code>, three hook re-exports, a topic generator, and one source file.</p>
+<p>Here <code>mycli</code> becomes the name for your CLI. The scaffold writes a
+<code>package.json</code> file that includes the oclif configuration, a
+<code>bin/run.js</code>, a topic generator, a dependency allowlist for your
+own providers, a vitest config, and a conformance test.
+<code>npm test</code> runs that test. The scaffold installs
+<code>@aclif/core</code> under the alias <code>aclif</code>,
+so your code imports from <code>aclif</code>.</p>
 
 <pre><code>// src/index.ts
 import {defineCli, type DefinedCli} from 'aclif'
@@ -54,40 +71,91 @@ export const registry: DefinedCli['registry'] = cli.registry</code></pre>
 <table>
 <thead><tr><th>Surface</th><th><code>mycli</code> gets</th></tr></thead>
 <tbody>
-<tr><td>Command strings in examples, hints, and next-command suggestions</td><td><code>mycli salesforce data query ...</code>, rendered at emit time from the configured binary name</td></tr>
-<tr><td>Config and cache directories</td><td><code>~/.config/mycli/config.yaml</code>, <code>~/.cache/mycli/</code></td></tr>
-<tr><td>Framework environment variables</td><td><code>MYCLI_PROFILE</code>, <code>MYCLI_INSTANCE</code>, <code>MYCLI_IDENTITY_TOKEN</code>, <code>MYCLI_IDENTITY_SECRET</code>, <code>MYCLI_NO_MANIFESTS</code>, <code>MYCLI_CONFIG_DIR</code></td></tr>
-<tr><td>Audit line, <code>auth status</code>, <code>discover</code>, <code>learn</code></td><td>this CLI's providers only</td></tr>
+<tr><td>Command strings in examples, hints, and next-command
+suggestions</td><td><code>mycli salesforce data query ...</code>,
+rendered at emit time from the configured binary name</td></tr>
+<tr><td>Config and cache directories</td><td><code>~/.config/mycli/config.yaml</code>,
+<code>~/.cache/mycli/</code></td></tr>
+<tr><td>Framework environment variables</td><td><code>MYCLI_PROFILE</code>,
+<code>MYCLI_INSTANCE</code>,
+<code>MYCLI_IDENTITY_TOKEN</code>,
+<code>MYCLI_IDENTITY_SECRET</code>,
+<code>MYCLI_NO_MANIFESTS</code>,
+<code>MYCLI_CONFIG_DIR</code></td></tr>
+<tr><td>Audit line, <code>auth status</code>,
+<code>discover</code>, <code>learn</code></td><td>this CLI's
+providers only</td></tr>
 </tbody>
 </table>
 </div>
 
-<p>Everything else is the framework's: the envelope, the error vocabulary, the introspection flags, credential resolution, the connection pool, the session cache, and the embedded runtime.</p>
+<p>Everything else is the framework's: the envelope, the
+error vocabulary, the introspection flags, credential
+resolution, the connection pool, the session cache, and the
+embedded runtime.</p>
+
+<h2>Provider instances</h2>
+
+<p>A provider describes a platform. An instance is one
+deployment of that platform, such as a single Salesforce
+org, with its own credentials and its own custom objects,
+custom fields, and picklist values. Your CLI learns those
+customizations after it is built.
+<code>mycli &lt;provider&gt; introspect --bootstrap</code>
+walks the instance once and captures them into a tenant
+catalog, and from then on <code>learn</code> and
+<code>--schema</code> use that instance's own names. A
+custom object added next month is picked up by
+<code>--refresh</code>. No provider code changes and no
+rebuild.</p>
 
 <h2>Add your own provider</h2>
 
-<p>A provider that belongs to your CLI goes under your package's <code>src/providers/</code> and is listed in <code>src/index.ts</code> next to the framework's. It is written exactly as a framework provider is, against the same plugin API and the same conformance rules, and it is tier <code>private</code> in your CLI. The guide is <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/PROVIDER_AUTHORING.md">PROVIDER_AUTHORING.md</a>; the scaffold is <code>npm run scaffold-provider</code>.</p>
+<p>Writing one takes little effort when a coding agent does
+the work. Most of a provider is a direct translation of the
+platform's API specification: each operation becomes a
+command, its parameters become flags, its enumerations
+become flag options, and its method and path decide the
+safety metadata.
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/PROVIDER_AUTHORING.md">PROVIDER_AUTHORING.md</a>
+includes a sample generation prompt. Fill in the provider's
+name, tier, spec file, and auth scheme, and the coding agent
+generates the provider, runs the conformance suite, and
+fixes what fails.</p>
 
-<pre><code>import {defineCli, type DefinedCli} from 'aclif'
-import {salesforcePlugin} from 'aclif/providers'
-import {acmePlugin} from './providers/acme/plugin.js'
+<h2>Test your providers</h2>
 
-const cli: DefinedCli = defineCli({bin: 'mycli', providers: [salesforcePlugin, acmePlugin]})</code></pre>
+<p>The framework's conformance suite is importable from
+<code>aclif/testing</code>, and the scaffold writes a test
+that runs it over the providers your package declares.</p>
+
+<pre><code>npm run build &amp;&amp; npm test</code></pre>
 
 <h2>Upgrade the framework</h2>
 
-<p><code>npm update aclif</code>. Your providers and your name are in your tree; the framework's changes arrive as a dependency bump. Nothing in the framework repository needs to know your CLI exists.</p>
+<p><code>npm update aclif</code>. Your providers and your
+name are in your tree. The framework's changes arrive as a
+dependency bump. Nothing in the framework repository needs
+to know your CLI exists.</p>
 
 <h2>When to fork instead</h2>
 
-<p>Build a CLI package unless you also need to change the framework's core. A team that does change core forks the repository and keeps its providers under <code>src/providers/private/</code>, a prefix upstream never commits to and upstream CI refuses in pull requests, so pulling upstream stays conflict-free and core fixes go back from a clean branch. The two routes, and how to contribute a provider or a fix back, are in <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/FORKING.md">FORKING.md</a>.</p>
+<p>Build a CLI package as described here unless you also need to change the
+framework's core. A team that does change core forks the
+repository and keeps its providers under
+<code>src/providers/private/</code>, a prefix upstream does not
+commit, so pulling upstream stays conflict-free and core fixes go back
+from a clean branch.</p>
 
-<p>Details: <a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/BUILDING_A_CLI.md">BUILDING_A_CLI.md</a>.</p>
+<p>The full guide is
+<a href="https://github.com/agent-cli-framework/aclif/blob/main/docs/BUILDING_A_CLI.md">BUILDING_A_CLI.md</a>.</p>
 </main>
 
 <footer class="site">
   <div class="inner">
-    aclif is MIT licensed. Source, issues, and documentation at <a href="https://github.com/agent-cli-framework/aclif">github.com/agent-cli-framework/aclif</a>.
+    <span>aclif is MIT licensed. Copyright (c) 2026 Prompt
+    One, Inc.</span>
+    <a class="gh-button" href="https://github.com/agent-cli-framework/aclif" aria-label="aclif on GitHub" title="github.com/agent-cli-framework/aclif"><svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
   </div>
 </footer>
 </body>
