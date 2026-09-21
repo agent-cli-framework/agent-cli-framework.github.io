@@ -197,6 +197,59 @@ names who ran it.</p>
 
 <details class="faq" id="q5">
   <summary><span class="num">5</span><span class="q">How
+  is this different from an injection
+  proxy?</span></summary>
+  <div class="answer">
+
+<p>Both aclif and an injection proxy such as
+<a href="https://github.com/Infisical/agent-vault">Agent
+Vault</a> prevent the agent from holding an authentication
+secret. With the proxy, the agent's environment holds a
+placeholder or an empty token. Every outbound connection
+is forced through the proxy, and the proxy terminates TLS,
+matches the destination host, and puts the real token in
+the request before it goes out. Vault sidecars and
+tool-auth brokers do the same job at a different point in
+the path.</p>
+
+<p>Unlike those, aclif also handles authorization. None of
+them decides whether the call should go out at all. Agent
+Vault will attach the real token to a bulk delete as
+readily as to a query, because on the wire both are a POST
+to the same host. aclif can tell them apart, because every
+command declares what it does before it runs.
+<a href="#q6">Question 6</a> covers how a gateway uses
+those declarations.</p>
+  </div>
+</details>
+
+<details class="faq" id="q6">
+  <summary><span class="num">6</span><span class="q">How
+  does a gateway running aclif decide whether a command
+  should run?</span></summary>
+  <div class="answer">
+
+<p>A proxy works on the connection. It sees a host, a path,
+and a body it can parse only if it knows that provider's
+API, so its policy stops at the host or the path, and any
+finer rule has to be rebuilt for each provider. A proxy
+also typically knows which workload made the call rather
+than which person.</p>
+
+<p>aclif works on the operation. Every command declares its
+mutability, blast radius, reversibility, idempotency, and
+whether it requires confirmation, and that metadata is
+readable before the command's code loads. A gateway running
+aclif receives a command string and the acting user's
+identity, reads the declaration, and decides whether the
+call runs before it resolves any credential. Because every
+command declares itself the same way, one rule covers every
+provider.</p>
+  </div>
+</details>
+
+<details class="faq" id="q7">
+  <summary><span class="num">7</span><span class="q">How
   does a gateway handle shared service
   accounts?</span></summary>
   <div class="answer">
@@ -221,8 +274,8 @@ service account.</p>
   </div>
 </details>
 
-<details class="faq" id="q6">
-  <summary><span class="num">6</span><span class="q">How
+<details class="faq" id="q8">
+  <summary><span class="num">8</span><span class="q">How
   does aclif save tokens in the context
   window?</span></summary>
   <div class="answer">
@@ -258,8 +311,8 @@ design time, as described in
 
 <h2>Supported providers</h2>
 
-<details class="faq" id="q7">
-  <summary><span class="num">7</span><span class="q">Do I
+<details class="faq" id="q9">
+  <summary><span class="num">9</span><span class="q">Do I
   need a provider for every external service an agent
   accesses via aclif?</span></summary>
   <div class="answer">
@@ -273,8 +326,8 @@ flags, environment variables, profiles, etc.</p>
   </div>
 </details>
 
-<details class="faq" id="q8">
-  <summary><span class="num">8</span><span class="q">What
+<details class="faq" id="q10">
+  <summary><span class="num">10</span><span class="q">What
   providers are available today?</span></summary>
   <div class="answer">
 
@@ -314,8 +367,8 @@ and contributed providers are welcome. See
   </div>
 </details>
 
-<details class="faq" id="q9">
-  <summary><span class="num">9</span><span class="q">Can
+<details class="faq" id="q11">
+  <summary><span class="num">11</span><span class="q">Can
   an agent work with two instances of the same
   provider?</span></summary>
   <div class="answer">
@@ -338,8 +391,8 @@ whichever instance the command names.</p>
   </div>
 </details>
 
-<details class="faq" id="q10">
-  <summary><span class="num">10</span><span class="q">How
+<details class="faq" id="q12">
+  <summary><span class="num">12</span><span class="q">How
   much effort is it to write a new
   provider?</span></summary>
   <div class="answer">
@@ -365,8 +418,8 @@ result. Details are in the repository.</p>
 
 <h2>Aliases, canonical names, and semantic data</h2>
 
-<details class="faq" id="q11">
-  <summary><span class="num">11</span><span class="q">How
+<details class="faq" id="q13">
+  <summary><span class="num">13</span><span class="q">How
   does aclif handle canonical names across
   providers?</span></summary>
   <div class="answer">
@@ -412,8 +465,8 @@ organization's other configuration.</p>
   </div>
 </details>
 
-<details class="faq" id="q12">
-  <summary><span class="num">12</span><span class="q">Canonical
+<details class="faq" id="q14">
+  <summary><span class="num">14</span><span class="q">Canonical
   mapping is a notoriously hard problem. Whole product lines
   exist to solve it with a semantic data layer. What makes
   you think aclif can solve it?</span></summary>
@@ -471,8 +524,8 @@ an existing glossary, can be written into that table.</p>
   </div>
 </details>
 
-<details class="faq" id="q13">
-  <summary><span class="num">13</span><span class="q">Can I
+<details class="faq" id="q15">
+  <summary><span class="num">15</span><span class="q">Can I
   drive the canonical vocabulary from my existing semantic
   layer, business glossary, or enterprise data
   dictionary?</span></summary>
@@ -520,8 +573,8 @@ names them.</p>
 
 <h2>Development and error handling</h2>
 
-<details class="faq" id="q14">
-  <summary><span class="num">14</span><span class="q">Can I
+<details class="faq" id="q16">
+  <summary><span class="num">16</span><span class="q">Can I
   add my own internal or proprietary APIs?</span></summary>
   <div class="answer">
 
@@ -551,8 +604,8 @@ and
   </div>
 </details>
 
-<details class="faq" id="q15">
-  <summary><span class="num">15</span><span class="q">How
+<details class="faq" id="q17">
+  <summary><span class="num">17</span><span class="q">How
   does aclif handle an instance's custom objects and
   instance-specific endpoints?</span></summary>
   <div class="answer">
@@ -596,8 +649,8 @@ the same command surface.</p>
   </div>
 </details>
 
-<details class="faq" id="q16">
-  <summary><span class="num">16</span><span class="q">What
+<details class="faq" id="q18">
+  <summary><span class="num">18</span><span class="q">What
   is different about aclif's errors?</span></summary>
   <div class="answer">
 
@@ -618,8 +671,8 @@ includes the command that fixes it. </p>
   </div>
 </details>
 
-<details class="faq" id="q17">
-  <summary><span class="num">17</span><span class="q">Does
+<details class="faq" id="q19">
+  <summary><span class="num">19</span><span class="q">Does
   introspection consume SaaS API quota?</span></summary>
   <div class="answer">
 
